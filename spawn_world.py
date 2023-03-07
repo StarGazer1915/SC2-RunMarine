@@ -7,7 +7,7 @@ class SentdeBot(sc2.BotAI):
         # what to do every step
         await self.distribute_workers()  # in sc2/bot_ai.py
 
-run_game(maps.get("AbyssalReefLE"), 
+run_game(maps.get("sandbox"),
 [
     Bot(Race.Protoss, SentdeBot()),
     Computer(Race.Terran, Difficulty.Easy)
