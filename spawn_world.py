@@ -17,6 +17,7 @@ class MarineBot(sc2.BotAI):
         for worker in all_workers:
             print(worker)
             await self.do(worker.move(self.enemy_start_locations[0]))
+
     async def do_something(self):
         marine_id = self.units.find_by_tag(1)
         await self.do(marine_id.move())
