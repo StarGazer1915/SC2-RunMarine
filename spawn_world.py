@@ -1,5 +1,3 @@
-from heapq import merge
-from shutil import move
 import sc2
 from sc2 import run_game, maps, Race, Difficulty
 from sc2.player import Bot, Computer
@@ -41,11 +39,9 @@ class MarineBot(sc2.BotAI):
     
     async def update_viewer(self):
         # Get teh pixelMap Data
-        vis_data = self.state.visibility.data_numpy
-        creep_data = self.state.creep.data_numpy
-        movegrid_data = np.flip(self.game_info.pathing_grid.data_numpy, 0)
-
-        
+        vis_data = self.state.visibility.data_numpy * 255
+        creep_data = self.state.creep.data_numpy * 255
+        movegrid_data = np.flip(self.game_info.pathing_grid.data_numpy * 255, 0)        
 
         merge_data = vis_data + movegrid_data 
         # print(f"Shape: {merge_data.shape}")
