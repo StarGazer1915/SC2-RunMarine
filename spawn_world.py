@@ -1,4 +1,3 @@
-from mimetypes import init
 import sc2
 from sc2 import run_game, maps, Race, Difficulty
 from sc2.player import Bot, Computer
@@ -9,10 +8,12 @@ import pygame
 import numpy as np
 
 class MarineBot(sc2.BotAI):
+    def __init__(self):
+        self.use_viz = False
+        super().__init__()
 
     def on_start(self):
-        self.use_viz = False
-        # self.init_window()
+        self.init_window()
 
         enemy_location = self.enemy_start_locations
         print(f"Enemy start locations:\n{enemy_location}\n")
@@ -28,10 +29,33 @@ class MarineBot(sc2.BotAI):
 
     def init_window(self):
         pygame.init()
-        self.screen = pygame.display.set_mode((500, 500))
-        self.screen.fill((0, 0, 0))
+
+        self.display = pygame.display
+        self.screen = self.display.set_mode((640, 480))
+        self.screen.fill((255, 255, 255))
+        pygame.display.set_caption("Agent Viewer")
+
         self.use_viz = True
     
+    def update_viewer(self):
+        # Get teh pixelMap Data
+        vis_data = self.state.visibility.data_numpy
+        creep_data = self.state.creep.data_numpy
+        movegrid_data = self.game_info.pathing_grid.data_numpy
+
+        # Turn them into a surface
+        vis_surf = pygame.surfarray.make_surface(vis_data)
+        movegrid_surf = pygame.surfarray.make_surface(movegrid_data)
+        creep_surf = pygame.surfarray.make_surface(creep_data)
+
+        # and apply them to the screen 
+        self.screen.blit(vis_surf, (0, 0))
+        self.screen.blit(movegrid_surf, (200, 0))
+        self.screen.blit(creep_surf, (0, 250))
+
+        # update display
+        pygame.display.update()
+        
 
     async def on_step(self, iteration):
         # await self.distribute_workers()
@@ -39,19 +63,20 @@ class MarineBot(sc2.BotAI):
         await self.move_workers()
         await self.look_for_enemy()
 
-        print(f"Unit Location: {self.workers[0].position}")
+        # print(f"Unit Location: {self.workers[0].position}")
 
-        self.game_info.pathing_grid.plot()
-        # self.state.creep.plot()
+        # self.state.visibility.save_image("vis.png")
+        # self.state.visibility.plot()
+        
         if self.use_viz:
-            pygame.display.flip()
+            self.update_viewer()
 
 
     async def move_workers(self, unit_tag=None):
 
         all_workers = self.workers
         for worker in all_workers:
-            await self.do(worker.move(self.game_info.map_center))
+            await self.do(worker.move(self.enemy_start_locations[0]))
 
     async def do_something(self, tag):
         marine_id = self.units.find_by_tag(tag)
@@ -71,9 +96,6 @@ class MarineBot(sc2.BotAI):
                 print(f"Structure spotted at: {unit.position}")
             else:
                 print(f"enemy spotted at: {unit.position}")
-
-    def get_visibility(self):
-        vis_data = self.state.visibility.data_numpy
 
 
 run_game(maps.get("AbyssalReefLE"),
