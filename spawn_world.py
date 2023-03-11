@@ -18,6 +18,7 @@ class MarineBot(sc2.BotAI):
         self.valid_threshold = 0.5
         super().__init__()
 
+
     def on_start(self):
         self.init_window()
 
@@ -33,6 +34,7 @@ class MarineBot(sc2.BotAI):
 
         return super().on_start()
 
+
     def init_window(self):
         pygame.init()
 
@@ -43,7 +45,16 @@ class MarineBot(sc2.BotAI):
 
         self.use_viz = True
 
+
     def store_or_pad(self, vismap):
+        """
+        Function that stores the initial vision map of the marine into the class attribute
+        self.vismap_scores (numpy array) which will serve as the agent's memory.
+        If the agent already has a memory then it will pad the current vismap and return it.
+        The pad_with() function is used for adding the padding.
+        :param vismap: array
+        :return: padded array
+        """
         def pad_with(array, pad_width, iaxis, kwargs):
             array[:pad_width[0]] = kwargs.get('padder', 10)
             array[-pad_width[1]:] = kwargs.get('padder', 10)
@@ -52,12 +63,22 @@ class MarineBot(sc2.BotAI):
             self.vismap_scores = vismap.astype("float64")
             self.vismap_stored = True
         else:
-            # print(f"\nInput vision map:\n{vismap}\n")
-            # vismap_padded = np.pad(updated_map, 2, pad_with, padder=2.)
-            # print(f"Padded vision map:\n{vismap_padded}")
             return np.pad(vismap, 2, pad_with, padder=2.)
 
+
     def generate_scores(self):
+        """
+        This function generates scores for the terrain that the marine is currently viewing. It first gets and pads
+        the current visionmap and then proceeds to look in a 5x5 range around the current index (with the current
+        value in the middle of the 5x5 grid). Note that the function only generates scores for valid terrain that
+        the marine sees (so not for impassible (0.0) terrain). This area (5x5 array grid) of values is then checked
+        on viable positions based on if the values are higher than the valid_threshold attribute (float). Also note
+        that the vismap always gives a score of 2 for passable terrain. If that is the case then all these valid
+        points are gathered and the score is calculated based on how many of the 25 possible points are valid
+        (So 11 valid points out of 25 is 0.44 for example). This score then replaces the value in the
+        self.vismap_scores attribute (Memory) on the correct index.
+        :return: void
+        """
         def n_closest(x, n, d=1):
             return x[n[0] - d:n[0] + d + 1, n[1] - d:n[1] + d + 1]
 
@@ -73,12 +94,9 @@ class MarineBot(sc2.BotAI):
                         score = round(sum(valid_points) / (len(area) * len(area[0])), 2)
                         self.vismap_scores[y][x] = score
 
-        for y in self.vismap_scores:
-            print("".join([str(x) if x != 0.0 else "0" for x in y]))
-        print("\n\n")
 
     async def update_viewer(self):
-        # Get teh pixelMap Data
+        # Get the pixelMap Data
         vis_data = self.state.visibility.data_numpy
         creep_data = self.state.creep.data_numpy
         movegrid_data = np.flip(self.game_info.pathing_grid.data_numpy, 0)
@@ -102,7 +120,6 @@ class MarineBot(sc2.BotAI):
         pygame.display.update()
 
 
-
     async def on_step(self, iteration):
         # await self.distribute_workers()
 
@@ -114,13 +131,11 @@ class MarineBot(sc2.BotAI):
         # print(f"Unit Location: {self.workers[0].position}")
 
         # self.state.visibility.save_image("vis.png")
-
-
-
         # self.state.visibility.plot()
 
         if self.use_viz:
             await self.update_viewer()
+
 
     async def move_workers(self, unit_tag=None):
 
@@ -128,12 +143,14 @@ class MarineBot(sc2.BotAI):
         for worker in all_workers:
             await self.do(worker.move(self.enemy_start_locations[0]))
 
+
     async def do_something(self, tag):
         marine_id = self.units.find_by_tag(tag)
         if marine_id != None:
             await self.do(marine_id.move((0, 0)))
         else:
             print("Could not find unit to move")
+
 
     async def look_for_enemy(self):
         enemy_units = self.known_enemy_units
