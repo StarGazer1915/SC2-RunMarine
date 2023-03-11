@@ -61,10 +61,10 @@ class MarineBot(sc2.BotAI):
 
         if not self.vismap_stored:
             self.vismap_scores = vismap.astype("float64")
-            # self.vismap_scores[self.vismap_scores == 0.0] = 2.0
+            self.vismap_scores[self.vismap_scores == 0.0] = 0.0
             self.vismap_stored = True
         else:
-            return np.pad(vismap, 2, pad_with, padder=2.)
+            return np.pad(vismap, 2, pad_with, padder=0.)
 
 
     def generate_scores(self):
@@ -84,24 +84,40 @@ class MarineBot(sc2.BotAI):
             return x[n[0] - d:n[0] + d + 1, n[1] - d:n[1] + d + 1]
 
         updated_map = self.state.visibility.data_numpy.copy().astype("float64")
-        # for a in updated_map:
-        #     print(a)
-        # print("\n\n")
+        pathing_map = self.game_info.pathing_grid.data_numpy.copy().astype("float64")
+        print(f"updated_map:\n")
+        for a in updated_map:
+            print(list(a))
+        print("\n\n")
+
+        # Make all positions in current vision invalid if impassable.
+        for y1 in range(len(updated_map)):
+            for x1 in range(len(updated_map[y1])):
+                if updated_map[y1][x1] == 2.0 and pathing_map[y1][x1] == 0.0:
+                    updated_map[y1][x1] = 0.0
+                    if self.vismap_stored:
+                        self.vismap_scores[y1][x1] = 0.0
+
         vismap_padded = self.store_or_pad(updated_map)
 
         if vismap_padded is not None:
-            # for b in vismap_padded:
-            #     print(b)
-            # print("\n\n")
-            for y in range(len(updated_map)):
-                for x in range(len(updated_map[y])):
-                    if updated_map[y][x] != 0.0:
-                        area = n_closest(vismap_padded, (y + 2, x + 2), d=2)
+            print(f"vismap_padded:\n")
+            for b in vismap_padded:
+                print(list(b))
+            print("\n\n")
+            for y2 in range(len(updated_map)):
+                for x2 in range(len(updated_map[y2])):
+                    if updated_map[y2][x2] != 0.0 and pathing_map[y2][x2] != 0.0:
+                        area = n_closest(vismap_padded, (y2 + 2, x2 + 2), d=2).copy()
+                        # print(f"Area: \n{area}\n")
                         area[area > self.valid_threshold] = 1
                         area[area <= self.valid_threshold] = 0
                         score = round(sum(area.flatten()) / (len(area) * len(area[0])), 2)
-                        self.vismap_scores[y][x] = score
+                        self.vismap_scores[y2][x2] = score
+                    else:
+                        self.vismap_scores[y2][x2] = 0.0
 
+        print(f"self.vismap_scores:\n")
         for y in self.vismap_scores:
             line = ""
             for x in y:
@@ -144,6 +160,7 @@ class MarineBot(sc2.BotAI):
 
         # self.state.visibility.save_image("vis.png")
         self.state.visibility.plot()
+        # self.game_info.pathing_grid.plot()
 
         if self.use_viz:
             await self.update_viewer()
@@ -175,7 +192,7 @@ class MarineBot(sc2.BotAI):
                 print(f"enemy spotted at: {unit.position}")
 
 
-run_game(maps.get("marine_vs_baneling"),
+run_game(maps.get("marine_vs_baneling_advanced"),
          [
              Bot(Race.Terran, MarineBot()),
              Computer(Race.Zerg, Difficulty.Hard)
