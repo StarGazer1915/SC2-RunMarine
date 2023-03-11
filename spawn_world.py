@@ -22,15 +22,15 @@ class MarineBot(sc2.BotAI):
     def on_start(self):
         self.init_window()
 
-        enemy_location = self.enemy_start_locations
-        print(f"Enemy start locations:\n{enemy_location}\n")
-
-        self.worker = self.workers[0]
-        self.worker_tag = self.worker.tag
-
-        print(f"Worker info:\n{self.worker}")
-        print(f"Worker location: {self.worker.position}\n")
-        print(f"Center of map at: {self.game_info.map_center}")
+        # enemy_location = self.enemy_start_locations
+        # print(f"Enemy start locations:\n{enemy_location}\n")
+        #
+        # self.worker = self.workers[0]
+        # self.worker_tag = self.worker.tag
+        #
+        # print(f"Worker info:\n{self.worker}")
+        # print(f"Worker location: {self.worker.position}\n")
+        # print(f"Center of map at: {self.game_info.map_center}")
 
         return super().on_start()
 
@@ -61,6 +61,7 @@ class MarineBot(sc2.BotAI):
 
         if not self.vismap_stored:
             self.vismap_scores = vismap.astype("float64")
+            # self.vismap_scores[self.vismap_scores == 0.0] = 2.0
             self.vismap_stored = True
         else:
             return np.pad(vismap, 2, pad_with, padder=2.)
@@ -83,17 +84,30 @@ class MarineBot(sc2.BotAI):
             return x[n[0] - d:n[0] + d + 1, n[1] - d:n[1] + d + 1]
 
         updated_map = self.state.visibility.data_numpy.copy().astype("float64")
+        # for a in updated_map:
+        #     print(a)
+        # print("\n\n")
         vismap_padded = self.store_or_pad(updated_map)
 
         if vismap_padded is not None:
+            # for b in vismap_padded:
+            #     print(b)
+            # print("\n\n")
             for y in range(len(updated_map)):
                 for x in range(len(updated_map[y])):
                     if updated_map[y][x] != 0.0:
                         area = n_closest(vismap_padded, (y + 2, x + 2), d=2)
-                        valid_points = [1 for row in area for point in row if point > self.valid_threshold]
-                        score = round(sum(valid_points) / (len(area) * len(area[0])), 2)
+                        area[area > self.valid_threshold] = 1
+                        area[area <= self.valid_threshold] = 0
+                        score = round(sum(area.flatten()) / (len(area) * len(area[0])), 2)
                         self.vismap_scores[y][x] = score
 
+        for y in self.vismap_scores:
+            line = ""
+            for x in y:
+                line += f"{x} | "
+            print(line)
+        print("\n\n")
 
     async def update_viewer(self):
         # Get the pixelMap Data
@@ -121,27 +135,23 @@ class MarineBot(sc2.BotAI):
 
 
     async def on_step(self, iteration):
-        # await self.distribute_workers()
-
-        await self.move_workers()
-        await self.look_for_enemy()
-
         self.generate_scores()
+
+        # await self.move_to_point()
+        await self.look_for_enemy()
 
         # print(f"Unit Location: {self.workers[0].position}")
 
         # self.state.visibility.save_image("vis.png")
-        # self.state.visibility.plot()
+        self.state.visibility.plot()
 
         if self.use_viz:
             await self.update_viewer()
 
 
-    async def move_workers(self, unit_tag=None):
-
-        all_workers = self.workers
-        for worker in all_workers:
-            await self.do(worker.move(self.enemy_start_locations[0]))
+    async def move_to_point(self, unit_tag=None):
+        marine = self.units.of_type({MARINE})
+        await self.do(marine[0].move(Point2((20, 10))))
 
 
     async def do_something(self, tag):
@@ -165,7 +175,7 @@ class MarineBot(sc2.BotAI):
                 print(f"enemy spotted at: {unit.position}")
 
 
-run_game(maps.get("AbyssalReefLE"),
+run_game(maps.get("marine_vs_baneling"),
          [
              Bot(Race.Terran, MarineBot()),
              Computer(Race.Zerg, Difficulty.Hard)
