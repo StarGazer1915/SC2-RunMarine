@@ -80,20 +80,20 @@ class MarineBot(sc2.BotAI):
         self.vismap_scores attribute (Memory) on the correct index.
         :return: void
         """
-        def n_closest(x, n, d=1):
+        def n_closest(x, n, d=2):
             return x[n[0] - d:n[0] + d + 1, n[1] - d:n[1] + d + 1]
 
         updated_map = self.state.visibility.data_numpy.copy().astype("float64")
         pathing_map = self.game_info.pathing_grid.data_numpy.copy().astype("float64")
-        print(f"updated_map:\n")
-        for a in updated_map:
-            print(list(a))
-        print("\n\n")
+        # print(f"updated_map:\n")
+        # for a in updated_map:
+        #     print(list(a))
+        # print("\n\n")
 
         # Make all positions in current vision invalid if impassable.
         for y1 in range(len(updated_map)):
             for x1 in range(len(updated_map[y1])):
-                if updated_map[y1][x1] == 2.0 and pathing_map[y1][x1] == 0.0:
+                if updated_map[y1][x1] in [1.0, 2.0] and pathing_map[y1][x1] == 0.0:
                     updated_map[y1][x1] = 0.0
                     if self.vismap_stored:
                         self.vismap_scores[y1][x1] = 0.0
@@ -101,10 +101,10 @@ class MarineBot(sc2.BotAI):
         vismap_padded = self.store_or_pad(updated_map)
 
         if vismap_padded is not None:
-            print(f"vismap_padded:\n")
-            for b in vismap_padded:
-                print(list(b))
-            print("\n\n")
+            # print(f"vismap_padded:\n")
+            # for b in vismap_padded:
+            #     print(list(b))
+            # print("\n\n")
             for y2 in range(len(updated_map)):
                 for x2 in range(len(updated_map[y2])):
                     if updated_map[y2][x2] != 0.0 and pathing_map[y2][x2] != 0.0:
@@ -117,13 +117,13 @@ class MarineBot(sc2.BotAI):
                     else:
                         self.vismap_scores[y2][x2] = 0.0
 
-        print(f"self.vismap_scores:\n")
-        for y in self.vismap_scores:
-            line = ""
-            for x in y:
-                line += f"{x} | "
-            print(line)
-        print("\n\n")
+        # print(f"self.vismap_scores:\n")
+        # for y in self.vismap_scores:
+        #     line = ""
+        #     for x in y:
+        #         line += f"{x} | "
+        #     print(line)
+        # print("\n\n")
 
     async def update_viewer(self):
         # Get the pixelMap Data
@@ -159,7 +159,7 @@ class MarineBot(sc2.BotAI):
         # print(f"Unit Location: {self.workers[0].position}")
 
         # self.state.visibility.save_image("vis.png")
-        self.state.visibility.plot()
+        # self.state.visibility.plot()
         # self.game_info.pathing_grid.plot()
 
         if self.use_viz:
