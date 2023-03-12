@@ -93,7 +93,7 @@ class MarineBot(sc2.BotAI):
         # Make all positions in current vision invalid if impassable.
         for y1 in range(len(updated_map)):
             for x1 in range(len(updated_map[y1])):
-                if updated_map[y1][x1] in [1.0, 2.0] and pathing_map[y1][x1] == 0.0:
+                if updated_map[y1][x1] in [1.0, 2.0] and self.in_pathing_grid((y1, x1)) == 0.0:
                     updated_map[y1][x1] = 0.0
                     if self.vismap_stored:
                         self.vismap_scores[y1][x1] = 0.0
@@ -179,9 +179,8 @@ class MarineBot(sc2.BotAI):
             print("Could not find unit to move")
 
 
-    async def look_for_enemy(self):
+    async def look_for_baneling(self):
         enemy_units = self.known_enemy_units
-        # enemy_structures = self.known_enemy_structures
 
         if not len(enemy_units) > 0:
             return
