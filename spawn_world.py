@@ -75,24 +75,24 @@ class MarineBot(sc2.BotAI):
         # updated_map[updated_map == 0.] = 2.
         for marine in self.units.of_type(MARINE):
             mmask = np.flip(self.create_circular_mask(self.map_y_size, self.map_x_size,
-                                                      marine.position, marine.sight_range), 0)
+                                                      marine.position, marine.sight_range+2), 0)
 
             await self.generate_scores(updated_map, mmask)
-            # await self.baneling_radar(mmask)
+            await self.baneling_radar(mmask)
             # await self.run_away(marine, mmask)
 
             if self.use_viz:
                 await self.update_viewer()
 
-        # print(f"========== self.vismap_scores: ==========")
-        # for y in self.vismap_scores:
-        #     line = ""
-        #     for x in y:
-        #         line += f"{x} | "
-        #     print(line)
-        # print("\n\n")
+        print(f"========== self.vismap_scores (after all functions): ==========")
+        for y in self.vismap_scores:
+            line = ""
+            for x in y:
+                line += f"{x} | "
+            print(line)
+        print("\n\n")
 
-        self.state.visibility.plot()
+        # self.state.visibility.plot()
 
     async def generate_scores(self, updated_map, mmask):
         """
@@ -123,7 +123,8 @@ class MarineBot(sc2.BotAI):
                 for x2 in range(self.map_x_size):
                     if updated_map[y2][x2] != 0.0 and self.pathing_map[y2][x2] != 0.0:
                         if mmask[y2][x2]:
-                            area = self.n_closest(vismap_padded, (y2 + 2, x2 + 2), d=2).copy()
+                            area = self.n_closest(vismap_padded.copy(), (y2 + 2, x2 + 2), d=2)
+                            print(f"Area: \n{area}")
                             area[area > self.valid_threshold] = 1
                             area[area <= self.valid_threshold] = 0
                             score = round(sum(area.flatten()) / (len(area) * len(area[0])), 2)
@@ -131,6 +132,15 @@ class MarineBot(sc2.BotAI):
                     else:
                         if mmask[y2][x2]:
                             self.vismap_scores[y2][x2] = 0.0
+
+        print(f"========== self.vismap_scores (after score generation): ==========")
+        for y in self.vismap_scores:
+            line = ""
+            for x in y:
+                line += f"{x} | "
+            print(line)
+        print("\n\n")
+
 
     async def baneling_radar(self, mmask):
         enemy_units = self.known_enemy_units
@@ -143,17 +153,10 @@ class MarineBot(sc2.BotAI):
                         self.create_circular_mask(self.map_y_size, self.map_x_size, pos, b_sight_range-5.0), 0)
                     bmask2 = np.flip(
                         self.create_circular_mask(self.map_y_size, self.map_x_size, pos, b_sight_range-2.0), 0)
-                    # bmask3 = np.flip(
-                    #     self.create_circular_mask(self.map_y_size, self.map_x_size, pos, b_sight_range)+1.0, 0)
-                    # bmask4 = np.flip(
-                    #     self.create_circular_mask(self.map_y_size, self.map_x_size, pos, b_sight_range+4.0), 0)
 
-                    """WIP: The 2 lines below still need to only be applied to points in marine vision only"""
-                    # self.vismap_scores[np.where((bmask4 == True) & (mmask == True))] *= 1.0
-                    # self.vismap_scores[np.where((bmask3 == True) & (mmask == True))] *= 1.0
                     self.vismap_scores[(bmask2 == True) & (mmask == True)] *= 0.6
                     self.vismap_scores[(bmask1 == True) & (mmask == True)] *= 0.1
-                    self.vismap_scores = np.around(self.vismap_scores, 2)
+                    self.vismap_scores = np.around(self.vismap_scores.copy(), 2)
 
     async def run_away(self, marine, mmask):
         enemy_units = self.known_enemy_units
@@ -167,7 +170,7 @@ class MarineBot(sc2.BotAI):
                     for row in range(self.map_y_size):
                         for col in range(self.map_x_size):
                             if mmask[row][col]:
-                                if self.vismap_scores[row][col] > highest_coor_in_vision:
+                                if self.vismap_scores[row][col] >= highest_coor_in_vision:
                                     if round(unit.distance_to(Point2((col, row))), 2) > longest_distance_to_bane:
                                         highest_coor_in_vision = self.vismap_scores[row][col]
                                         highest_scoring_coor = (col, (-row + 32))
@@ -176,21 +179,22 @@ class MarineBot(sc2.BotAI):
                                         highest_coor_in_vision = self.vismap_scores[row][col]
                                         highest_scoring_coor = (col, (-row + 32))
 
-                    print(f"Point: {highest_coor_in_vision},\n"
-                          f"highest_scoring_coor: {highest_scoring_coor},\n"
-                          f"Baneling Position: {unit.position}, \n"
-                          f"Longest distance to baneling: {longest_distance_to_bane},\n"
-                          f"Marine Position: {marine.position}\n")
+                    # print(f"Point: {highest_coor_in_vision},\n"
+                    #       f"highest_scoring_coor: {highest_scoring_coor},\n"
+                    #       f"Baneling Position: {unit.position}, \n"
+                    #       f"Longest distance to baneling: {longest_distance_to_bane},\n"
+                    #       f"Marine Position: {marine.position}\n"
+                    #       f"Marine to Bane dist: {marine.distance_to(unit.position)}")
 
                     await self.do(marine.move(Point2(highest_scoring_coor)))
 
-        # print(f"========== self.vismap_scores: ==========")
-        # for y in self.vismap_scores:
-        #     line = ""
-        #     for x in y:
-        #         line += f"{x} | "
-        #     print(line)
-        # print("\n\n")
+        print(f"========== self.vismap_scores (after run command): ==========")
+        for y in self.vismap_scores:
+            line = ""
+            for x in y:
+                line += f"{x} | "
+            print(line)
+        print("\n\n")
 
     async def update_viewer(self):
         vis_data = self.state.visibility.data_numpy
