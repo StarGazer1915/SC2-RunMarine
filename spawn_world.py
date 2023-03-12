@@ -1,11 +1,9 @@
-from heapq import merge
-from shutil import move
 import sc2
 from sc2 import run_game, maps, Race, Difficulty
 from sc2.player import Bot, Computer
-from sc2.constants import COMMANDCENTER, SCV, MARINE
-from sc2.ids.unit_typeid import UnitTypeId
+from sc2.constants import BANELING, MARINE
 from sc2.position import Point2
+import time
 import pygame
 import numpy as np
 
@@ -15,38 +13,49 @@ class MarineBot(sc2.BotAI):
         self.use_viz = False
         self.vismap_stored = False
         self.vismap_scores = np.array([])
-        self.valid_threshold = 0.5
+        self.valid_threshold = 0.8
+        self.pathing_map = np.array([])
+        self.map_y_size = 0
+        self.map_x_size = 0
         super().__init__()
-
 
     def on_start(self):
         self.init_window()
-
-        enemy_location = self.enemy_start_locations
-        print(f"Enemy start locations:\n{enemy_location}\n")
-
-        self.worker = self.workers[0]
-        self.worker_tag = self.worker.tag
-
-        print(f"Worker info:\n{self.worker}")
-        print(f"Worker location: {self.worker.position}\n")
-        print(f"Center of map at: {self.game_info.map_center}")
-
+        updated_map = self.state.visibility.data_numpy.copy().astype("float64")
+        self.pathing_map = self.game_info.pathing_grid.data_numpy.copy().astype("float64")
+        self.map_y_size = len(updated_map)
+        self.map_x_size = len(updated_map[0])
         return super().on_start()
-
 
     def init_window(self):
         pygame.init()
-
         self.display = pygame.display
         self.screen = self.display.set_mode((640, 480))
         self.screen.fill((255, 255, 255))
         pygame.display.set_caption("Agent Viewer")
-
         self.use_viz = True
 
+    # ==================== STATIC FUNCTIONS ==================== #
+    def create_circular_mask(self, h, w, center=None, radius=None):
+        if center is None:  # use the middle
+            center = (int(w / 2), int(h / 2))
+        if radius is None:  # use the smallest distance between the center and map edges
+            radius = min(center[0], center[1], w - center[0], h - center[1])
 
-    def store_or_pad(self, vismap):
+        Y, X = np.ogrid[:h, :w]
+        dist_from_center = np.sqrt((X - center[0]) ** 2 + (Y - center[1]) ** 2)
+
+        mask = dist_from_center <= radius
+        return mask
+
+    def pad_with(self, array, pad_width, iaxis, kwargs):
+        array[:pad_width[0]] = kwargs.get('padder', 10)
+        array[-pad_width[1]:] = kwargs.get('padder', 10)
+
+    def n_closest(self, x, n, d=2):
+        return x[n[0] - d:n[0] + d + 1, n[1] - d:n[1] + d + 1]
+
+    def store_or_pad(self, vismap, pad_value):
         """
         Function that stores the initial vision map of the marine into the class attribute
         self.vismap_scores (numpy array) which will serve as the agent's memory.
@@ -55,18 +64,13 @@ class MarineBot(sc2.BotAI):
         :param vismap: array
         :return: padded array
         """
-        def pad_with(array, pad_width, iaxis, kwargs):
-            array[:pad_width[0]] = kwargs.get('padder', 10)
-            array[-pad_width[1]:] = kwargs.get('padder', 10)
-
         if not self.vismap_stored:
             self.vismap_scores = vismap.astype("float64")
             self.vismap_stored = True
         else:
-            return np.pad(vismap, 2, pad_with, padder=2.)
+            return np.pad(vismap, 2, self.pad_with, padder=pad_value)
 
-
-    def generate_scores(self):
+    def generate_scores(self, updated_map, mmask):
         """
         This function generates scores for the terrain that the marine is currently viewing. It first gets and pads
         the current visionmap and then proceeds to look in a 5x5 range around the current index (with the current
@@ -77,95 +81,111 @@ class MarineBot(sc2.BotAI):
         points are gathered and the score is calculated based on how many of the 25 possible points are valid
         (So 11 valid points out of 25 is 0.44 for example). This score then replaces the value in the
         self.vismap_scores attribute (Memory) on the correct index.
+        :param updated_map:
+        :param mmask:
         :return: void
         """
-        def n_closest(x, n, d=1):
-            return x[n[0] - d:n[0] + d + 1, n[1] - d:n[1] + d + 1]
+        for y1 in range(self.map_y_size):
+            for x1 in range(self.map_x_size):
+                if updated_map[y1][x1] in [1.0, 2.0] and self.pathing_map[y1][x1] == 0.0:
+                    if mmask[y1][x1]:
+                        updated_map[y1][x1] = 0.0
+                        if self.vismap_stored:
+                            self.vismap_scores[y1][x1] = 0.0
 
-        updated_map = self.state.visibility.data_numpy.copy().astype("float64")
-        vismap_padded = self.store_or_pad(updated_map)
+        vismap_padded = self.store_or_pad(updated_map, 0.)
 
         if vismap_padded is not None:
-            for y in range(len(updated_map)):
-                for x in range(len(updated_map[y])):
-                    if updated_map[y][x] != 0.0:
-                        area = n_closest(vismap_padded, (y + 2, x + 2), d=2)
-                        valid_points = [1 for row in area for point in row if point > self.valid_threshold]
-                        score = round(sum(valid_points) / (len(area) * len(area[0])), 2)
-                        self.vismap_scores[y][x] = score
+            for y2 in range(self.map_y_size):
+                for x2 in range(self.map_x_size):
+                    if updated_map[y2][x2] != 0.0 and self.pathing_map[y2][x2] != 0.0:
+                        if mmask[y2][x2]:
+                            area = self.n_closest(vismap_padded, (y2 + 2, x2 + 2), d=2).copy()
+                            area[area > self.valid_threshold] = 1
+                            area[area <= self.valid_threshold] = 0
+                            score = round(sum(area.flatten()) / (len(area) * len(area[0])), 2)
+                            self.vismap_scores[y2][x2] = score
+                    else:
+                        if mmask[y2][x2]:
+                            self.vismap_scores[y2][x2] = 0.0
 
+        self.baneling_radar(mmask)
+
+    def baneling_radar(self, mmask):
+        enemy_units = self.known_enemy_units
+        if len(enemy_units) > 0:
+            for unit in enemy_units:
+                if unit.name == "Baneling":
+                    pos = unit.position.rounded
+                    b_sight_range = unit.sight_range  # 8.0
+                    bmask1 = np.flip(
+                        self.create_circular_mask(self.map_y_size, self.map_x_size, pos, b_sight_range-5.0), 0)
+                    bmask2 = np.flip(
+                        self.create_circular_mask(self.map_y_size, self.map_x_size, pos, b_sight_range-2.0), 0)
+
+                    self.vismap_scores[(bmask2 == True) & (mmask == True)] *= 0.6
+                    self.vismap_scores[(bmask1 == True) & (mmask == True)] *= 0.1
+                    self.vismap_scores = np.around(self.vismap_scores.copy(), 2)
+
+    # ==================== ASYNC FUNCTIONS ==================== #
+    async def on_step(self, iteration):
+        updated_map = self.state.visibility.data_numpy.astype("float64")
+        for marine in self.units.of_type(MARINE):
+            mmask = np.flip(self.create_circular_mask(self.map_y_size, self.map_x_size,
+                                                      marine.position, marine.sight_range-2), 0)
+
+            self.generate_scores(updated_map, mmask)
+            time.sleep(0.05)
+            await self.run_away(marine, mmask)
+
+            if self.use_viz:
+                await self.update_viewer()
+
+    async def run_away(self, marine, mmask):
+        enemy_units = self.known_enemy_units
+        if len(enemy_units) > 0:
+            for unit in enemy_units:
+                if unit.name == "Baneling":
+                    highest_coor_in_vision = 0.0
+                    highest_scoring_coor = (0.0, 0.0)
+                    longest_distance_to_bane = 0.0
+
+                    for row in range(self.map_y_size):
+                        for col in range(self.map_x_size):
+                            if mmask[row][col]:
+                                if self.vismap_scores[row][col] >= highest_coor_in_vision:
+                                    if round(unit.distance_to(Point2((col, row))), 2) > longest_distance_to_bane:
+                                        highest_coor_in_vision = self.vismap_scores[row][col]
+                                        highest_scoring_coor = (col, (-row + 32))
+                                        longest_distance_to_bane = round(unit.distance_to(Point2((col, row))), 2)
+                                    else:
+                                        highest_coor_in_vision = self.vismap_scores[row][col]
+                                        highest_scoring_coor = (col, (-row + 32))
+
+                    await self.do(marine.move(Point2(highest_scoring_coor)))
 
     async def update_viewer(self):
-        # Get the pixelMap Data
         vis_data = self.state.visibility.data_numpy
         creep_data = self.state.creep.data_numpy
         movegrid_data = np.flip(self.game_info.pathing_grid.data_numpy, 0)
-
         merge_data = vis_data + movegrid_data
-        # print(f"Shape: {merge_data.shape}")
 
-        # Turn them into a surface
         vis_surf = pygame.surfarray.make_surface(vis_data)
         movegrid_surf = pygame.surfarray.make_surface(movegrid_data)
         merge_surf = pygame.surfarray.make_surface(merge_data)
         creep_surf = pygame.surfarray.make_surface(creep_data)
 
-        # and apply them to the screen
         self.screen.blit(vis_surf, (0, 0))
         self.screen.blit(movegrid_surf, (200, 0))
         self.screen.blit(creep_surf, (0, 210))
         self.screen.blit(merge_surf, (200, 210))
 
-        # update display
         pygame.display.update()
 
-
-    async def on_step(self, iteration):
-        # await self.distribute_workers()
-
-        await self.move_workers()
-        await self.look_for_enemy()
-
-        self.generate_scores()
-
-        # print(f"Unit Location: {self.workers[0].position}")
-
-        # self.state.visibility.save_image("vis.png")
-        # self.state.visibility.plot()
-
-        if self.use_viz:
-            await self.update_viewer()
-
-
-    async def move_workers(self, unit_tag=None):
-
-        all_workers = self.workers
-        for worker in all_workers:
-            await self.do(worker.move(self.enemy_start_locations[0]))
-
-
-    async def do_something(self, tag):
-        marine_id = self.units.find_by_tag(tag)
-        if marine_id != None:
-            await self.do(marine_id.move((0, 0)))
-        else:
-            print("Could not find unit to move")
-
-
-    async def look_for_enemy(self):
-        enemy_units = self.known_enemy_units
-        # enemy_structures = self.known_enemy_structures
-
-        if not len(enemy_units) > 0:
-            return
-        for unit in enemy_units:
-            if unit.is_structure:
-                print(f"Structure spotted at: {unit.position}")
-            else:
-                print(f"enemy spotted at: {unit.position}")
-
-
-run_game(maps.get("AbyssalReefLE"),
+# marine_vs_baneling_advanced
+# marine_vs_baneling_advanced_noEnemyAI
+# marine_vs_baneling_advanced_NoOverlord
+run_game(maps.get("marine_vs_baneling_advanced_NoOverlord"),
          [
              Bot(Race.Terran, MarineBot()),
              Computer(Race.Zerg, Difficulty.Hard)
