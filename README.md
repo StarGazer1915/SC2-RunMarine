@@ -1,1 +1,9 @@
 # SC2-RunMarine
+Door Bram van Leusden, Justin Klein, Rutger Willard, Youssef Boulfiham
+
+
+## Inrichting omgeving
+De simulatie vindplaats in het spel Starcraft 2 en wordt aangestuurd met de python API SC2. We hebben gekozen voor deze API omdat het alle leden het best met deze taal overweg konden, hiernaast is er veel documentatie en uitleg over de API beschikbaar in deze link: https://pythonprogramming.net/commanding-army-starcraft-ii-ai-python-sc2-tutorial/. hiernaast heeft starcraft 2 zijn eigen map builder en is het voor ons zeer vrij eenvoudig om meerdere omgevingen/situaties op te zetten. In de simualtie proberen een of meerdere agents(marines) weg te rennen van een tegenstander(baneling). De tegenestander wordt aangestuurd door een computer en is hierdoor een onderdeel van de omgeving. De agent heeft uiteraard wel een eigen logica en waarneming van wereld waarmee die probeert te vluchten van de tegenstander. 
+
+## Architectuur, logica en onzekerheid
+Als code architectuur is er gekozen voor OOP, hiermee kunnen we het gedrag van één agent/marine makkelijk laten afwijken van een andre agent/marine zodat inviduele agents de omgeving anders kunnen waarnemen (http://www2.econ.iastate.edu/tesfatsi/ABMAOPAMES.LT.pdf). Om eerst de interpertatie van de wereld goed te laten werken is er huidig één agent die probeert te vluchten. Deze agent loopt door de omgeving heen en geeft ieder coordinaat in zicht op een score voor 'veiligheid'. een coordinaat wordt minder veilig beschouwt is als deze in de buurt van muren is en/of in het zicht is van de tegenstander (de agent wilt namelijk uit het zicht blijven). als de agent alle scores heeft kijkt hij eerst naar de hoogst scorende coordianten. De agent pakt het coordiaant dat het vertsweg is van de tegenstander als er meerdere coordinaten zijn met dezelfde score.  
