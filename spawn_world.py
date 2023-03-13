@@ -122,7 +122,10 @@ class MarineBot(sc2.BotAI):
                         self.create_circular_mask(self.map_y_size, self.map_x_size, pos, b_sight_range-5.0), 0)
                     bmask2 = np.flip(
                         self.create_circular_mask(self.map_y_size, self.map_x_size, pos, b_sight_range-2.0), 0)
+                    bmask3 = np.flip(
+                        self.create_circular_mask(self.map_y_size, self.map_x_size, pos, b_sight_range), 0)
 
+                    self.vismap_scores[(bmask3 == True) & (mmask == True)] *= 0.9
                     self.vismap_scores[(bmask2 == True) & (mmask == True)] *= 0.6
                     self.vismap_scores[(bmask1 == True) & (mmask == True)] *= 0.1
                     self.vismap_scores = np.around(self.vismap_scores.copy(), 2)
@@ -132,7 +135,7 @@ class MarineBot(sc2.BotAI):
         updated_map = self.state.visibility.data_numpy.astype("float64")
         for marine in self.units.of_type(MARINE):
             mmask = np.flip(self.create_circular_mask(self.map_y_size, self.map_x_size,
-                                                      marine.position, marine.sight_range-2), 0)
+                                                      marine.position, marine.sight_range-2.5), 0)
 
             self.generate_scores(updated_map, mmask)
             time.sleep(0.05)
@@ -185,6 +188,7 @@ class MarineBot(sc2.BotAI):
 # marine_vs_baneling_advanced
 # marine_vs_baneling_advanced_noEnemyAI
 # marine_vs_baneling_advanced_NoOverlord
+# marine_vs_baneling_advanced_NoOverlord_noCliff
 run_game(maps.get("marine_vs_baneling_advanced_NoOverlord"),
          [
              Bot(Race.Terran, MarineBot()),
