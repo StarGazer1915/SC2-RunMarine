@@ -8,7 +8,7 @@ import pygame
 import numpy as np
 
 
-class MarineBot(sc2.BotAI):
+class gameBot(sc2.BotAI):
     def __init__(self):
         self.use_viz = False
         self.vismap_stored = False
@@ -191,6 +191,6 @@ class MarineBot(sc2.BotAI):
 # marine_vs_baneling_advanced_NoOverlord_noCliff
 run_game(maps.get("marine_vs_baneling_advanced_NoOverlord"),
          [
-             Bot(Race.Terran, MarineBot()),
+             Bot(Race.Terran, gameBot()),
              Computer(Race.Zerg, Difficulty.Hard)
          ], realtime=True)
