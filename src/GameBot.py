@@ -1,16 +1,12 @@
 import time
-
+import numpy as np
 import sc2
 from sc2.constants import BANELING, MARINE
 from MarineAgent import MarineAgent
-import pygame
-import numpy as np
-from sc2.position import Point2
 
 
 class GameBot(sc2.BotAI):
     def __init__(self):
-        self.use_viz = False
         self.agents = []
         self.vismap_stored = False
         self.vismap_scores = np.array([])
@@ -21,7 +17,6 @@ class GameBot(sc2.BotAI):
         super().__init__()
 
     def on_start(self):
-        self.init_window()
         self.pathing_map = self.game_info.pathing_grid.data_numpy.astype("float64")
         self.map_y_size = len(self.pathing_map)
         self.map_x_size = len(self.pathing_map[0])
@@ -29,15 +24,7 @@ class GameBot(sc2.BotAI):
             self.agents.append(MarineAgent(agent, self.pathing_map, self.map_y_size, self.map_x_size))
         return super().on_start()
 
-    def init_window(self):
-        pygame.init()
-        self.display = pygame.display
-        self.screen = self.display.set_mode((640, 480))
-        self.screen.fill((255, 255, 255))
-        pygame.display.set_caption("Agent Viewer")
-        self.use_viz = True
-
-    # ==================== STATIC FUNCTIONS ==================== #
+    # ==================== MASKING FUNCTIONS ==================== #
     def create_circular_mask(self, h, w, center=None, radius=None):
         if center is None:  # use the middle
             center = (int(w / 2), int(h / 2))
@@ -81,26 +68,5 @@ class GameBot(sc2.BotAI):
                 movement_mask = np.flip(self.create_circular_mask(
                     self.map_y_size, self.map_x_size, agent.unit.position, agent.unit.sight_range - 2.5), 0)
                 await self.do(agent.take_action(movement_mask, known_banes))
-
-            if self.use_viz:
-                await self.update_viewer()
             else:
                 agent.known_banes = []
-
-    async def update_viewer(self):
-        vis_data = self.state.visibility.data_numpy
-        creep_data = self.state.creep.data_numpy
-        movegrid_data = np.flip(self.game_info.pathing_grid.data_numpy, 0)
-        merge_data = vis_data + movegrid_data
-
-        vis_surf = pygame.surfarray.make_surface(vis_data)
-        movegrid_surf = pygame.surfarray.make_surface(movegrid_data)
-        merge_surf = pygame.surfarray.make_surface(merge_data)
-        creep_surf = pygame.surfarray.make_surface(creep_data)
-
-        self.screen.blit(vis_surf, (0, 0))
-        self.screen.blit(movegrid_surf, (200, 0))
-        self.screen.blit(creep_surf, (0, 210))
-        self.screen.blit(merge_surf, (200, 210))
-
-        pygame.display.update()
