@@ -1,6 +1,6 @@
 from sc2 import run_game, maps, Race, Difficulty
 from sc2.player import Bot, Computer
-from gameBot import gameBot
+from src.gameBot import gameBot
 
 
 def __init__():
