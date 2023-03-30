@@ -23,6 +23,7 @@ class GameBot(sc2.BotAI):
         self.map_x_size = len(self.pathing_map[0])
         for agent in self.units.of_type(MARINE):
             self.agents.append(MarineAgent(agent, self.pathing_map, self.map_y_size, self.map_x_size))
+
         return super().on_start()
 
     # ==================== MASKING FUNCTIONS ==================== #
@@ -85,7 +86,7 @@ class GameBot(sc2.BotAI):
             known_banes = [b for b in baneling_list if score_mask[b.position.rounded[1]][b.position.rounded[0]]]
 
             if len(known_banes) > 0:
-                agent.apply_baneling_sof(score_mask, self.create_baneling_masks(known_banes))
+                agent.apply_baneling_sof(self.create_baneling_masks(known_banes))
                 time.sleep(0.05)
                 movement_mask = np.flip(self.create_circular_mask(agent.unit.position, agent.unit.sight_range-2.5), 0)
                 await self.do(agent.take_action(movement_mask, known_banes))

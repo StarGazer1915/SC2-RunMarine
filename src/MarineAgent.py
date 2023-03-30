@@ -38,7 +38,7 @@ class MarineAgent:
 
     def percept_environment(self, updated_map, vision_mask):
         """
-
+        ...
         :param updated_map:
         :param vision_mask:
         """
@@ -64,7 +64,7 @@ class MarineAgent:
                             vismap_padded[row+2][col+2] = 0.0
                             self.vismap_scores[row][col] = 0.0
 
-    def apply_baneling_sof(self, marine_mask, baneling_masks):
+    def apply_baneling_sof(self, baneling_masks):
         """
         This function applies modifiers on the scoremap in the masks given by the baneling_masks.
         These modifiers indicate to the agent how dangerous areas around the baneling are. These can be
@@ -75,9 +75,9 @@ class MarineAgent:
         :return: void
         """
         for mask_set in baneling_masks:
-            self.vismap_scores[(mask_set[2] == True) & (marine_mask == True)] *= 0.9
-            self.vismap_scores[(mask_set[1] == True) & (marine_mask == True)] *= 0.6
-            self.vismap_scores[(mask_set[0] == True) & (marine_mask == True)] *= 0.1
+            self.vismap_scores[(mask_set[2] == True)] *= 0.9
+            self.vismap_scores[(mask_set[1] == True)] *= 0.6
+            self.vismap_scores[(mask_set[0] == True)] *= 0.1
         self.vismap_scores = np.around(self.vismap_scores.copy(), 2)
 
     def define_state(self):
