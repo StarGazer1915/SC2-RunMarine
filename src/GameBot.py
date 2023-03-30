@@ -22,7 +22,7 @@ class GameBot(sc2.BotAI):
         self.map_y_size = len(self.pathing_map)
         self.map_x_size = len(self.pathing_map[0])
         for agent in self.units.of_type(MARINE):
-            self.agent_dict[str(agent.tag)] = MarineAgent(agent, self.pathing_map, self.map_y_size, self.map_x_size)
+            self.agent_dict[str(agent.tag)] = MarineAgent(self.pathing_map, self.map_y_size, self.map_x_size)
 
         return super().on_start()
 
@@ -60,7 +60,7 @@ class GameBot(sc2.BotAI):
         for bane in known_banelings:
             pos = bane.position.rounded
             b_sight_range = bane.sight_range  # default 8.0
-            bmask1 = np.flip(self.create_circular_mask(pos, b_sight_range-5.0), 0)
+            bmask1 = np.flip(self.create_circular_mask(pos, b_sight_range-4.0), 0)
             bmask2 = np.flip(self.create_circular_mask(pos, b_sight_range-2.0), 0)
             bmask3 = np.flip(self.create_circular_mask(pos, b_sight_range), 0)
             mask_list.append([bmask1, bmask2, bmask3])
@@ -83,13 +83,14 @@ class GameBot(sc2.BotAI):
         baneling_list = [unit for unit in self.known_enemy_units if unit.name == "Baneling"]
 
         for agent in self.units.of_type(MARINE):
+            tag = str(agent.tag)
             score_mask = np.flip(self.create_circular_mask(agent.position, agent.sight_range), 0)
-            self.agent_dict[agent.tag].position = agent.position
-            self.agent_dict[agent.tag].percept_environment(score_mask)
+            self.agent_dict[tag].position = agent.position
+            self.agent_dict[tag].percept_environment(score_mask)
             known_banes = [b for b in baneling_list if score_mask[b.position.rounded[1]][b.position.rounded[0]]]
 
             if len(known_banes) > 0:
-                self.agent_dict[agent.tag].apply_baneling_sof(self.create_baneling_masks(known_banes))
+                self.agent_dict[tag].apply_baneling_sof(self.create_baneling_masks(known_banes))
                 time.sleep(0.05)
                 movement_mask = np.flip(self.create_circular_mask(agent.position, agent.sight_range), 0)
-                await self.do(self.agent_dict[agent.tag].take_action(movement_mask, known_banes))
+                await self.do(agent.move(self.agent_dict[tag].take_action(movement_mask, known_banes)))

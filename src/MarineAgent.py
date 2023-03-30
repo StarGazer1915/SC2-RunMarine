@@ -3,7 +3,7 @@ from sc2.position import Point2
 
 
 class MarineAgent:
-    def __init__(self, unit, passability_map, map_y_size, map_x_size):
+    def __init__(self, passability_map, map_y_size, map_x_size):
         self.position = None
         self.vismap_stored = False
         self.vismap_scores = np.zeros(shape=(map_x_size, map_y_size)).astype("float64")
@@ -70,8 +70,8 @@ class MarineAgent:
         :return: void
         """
         for mask_set in baneling_masks:
-            self.vismap_scores[(mask_set[2] == True)] *= 0.8
-            self.vismap_scores[(mask_set[1] == True)] *= 0.5
+            self.vismap_scores[(mask_set[2] == True)] *= 0.9
+            self.vismap_scores[(mask_set[1] == True)] *= 0.6
             self.vismap_scores[(mask_set[0] == True)] *= 0.1
 
         self.vismap_scores = np.around(self.vismap_scores.copy(), 2)
@@ -115,7 +115,4 @@ class MarineAgent:
                             highest_coor_in_vision = self.vismap_scores[row][col]
                             highest_scoring_coor = (col, (-row + 32))
 
-        return self.unit.move(Point2(highest_scoring_coor))
-
-    def __str__(self):
-        return f"Agent: {self.unit.name}"
+        return Point2(highest_scoring_coor)
