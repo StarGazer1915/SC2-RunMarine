@@ -4,7 +4,7 @@ from sc2.position import Point2
 
 class MarineAgent:
     def __init__(self, unit, passability_map, map_y_size, map_x_size):
-        self.unit = unit
+        self.position = None
         self.vismap_stored = False
         self.vismap_scores = np.zeros(shape=(map_x_size, map_y_size)).astype("float64")
         self.valid_point_threshold = 0.7
@@ -73,6 +73,7 @@ class MarineAgent:
             self.vismap_scores[(mask_set[2] == True)] *= 0.8
             self.vismap_scores[(mask_set[1] == True)] *= 0.5
             self.vismap_scores[(mask_set[0] == True)] *= 0.1
+
         self.vismap_scores = np.around(self.vismap_scores.copy(), 2)
 
         # print("\n")
