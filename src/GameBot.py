@@ -9,8 +9,8 @@ class GameBot(sc2.BotAI):
     def __init__(self):
         self.agents = []
         self.pathing_map = np.array([])
-        self.map_y_size = 0
-        self.map_x_size = 0
+        self.map_y_size = 0.
+        self.map_x_size = 0.
         super().__init__()
 
     def on_start(self):
@@ -77,16 +77,15 @@ class GameBot(sc2.BotAI):
 
         :param iteration: iteration (sc2)
         """
-        updated_map = self.state.visibility.data_numpy.astype("float64")
         baneling_list = [unit for unit in self.known_enemy_units if unit.name == "Baneling"]
 
         for agent in self.agents:
             score_mask = np.flip(self.create_circular_mask(agent.unit.position, agent.unit.sight_range), 0)
-            agent.percept_environment(updated_map, score_mask)
+            agent.percept_environment(score_mask)
             known_banes = [b for b in baneling_list if score_mask[b.position.rounded[1]][b.position.rounded[0]]]
 
             if len(known_banes) > 0:
                 agent.apply_baneling_sof(self.create_baneling_masks(known_banes))
                 time.sleep(0.05)
-                movement_mask = np.flip(self.create_circular_mask(agent.unit.position, agent.unit.sight_range-2.5), 0)
+                movement_mask = np.flip(self.create_circular_mask(agent.unit.position, agent.unit.sight_range), 0)
                 await self.do(agent.take_action(movement_mask, known_banes))

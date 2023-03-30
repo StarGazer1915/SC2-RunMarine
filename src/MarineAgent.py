@@ -4,14 +4,14 @@ from sc2.position import Point2
 
 class MarineAgent:
     def __init__(self, unit, passability_map, map_y_size, map_x_size):
-        self.unit = unit                            # sc2 unit object in-game (Marine unit is this case)
-        self.vismap_stored = False                  # If a vision map is stored
-        self.vismap_scores = np.array([])           # The actual full vision map with its scored values
-        self.valid_point_threshold = 0.8            # Threshold that determines if a point is valid to move towards
-        self.passability_map = passability_map      # The passability map that shows what map points are passable
-        self.bmasks = []                            # Baneling objects in current vision
-        self.map_y_size = map_y_size                # vertical length of the current map
-        self.map_x_size = map_x_size                # horizontal length of the current map
+        self.unit = unit
+        self.vismap_stored = False
+        self.vismap_scores = np.zeros(shape=(map_x_size, map_y_size)).astype("float64")
+        self.valid_point_threshold = 0.7
+        self.passability_map = passability_map
+        self.bmasks = []
+        self.map_y_size = map_y_size
+        self.map_x_size = map_x_size
 
     def pad_with(self, array, pad_width, iaxis, kwargs):
         """
@@ -36,33 +36,28 @@ class MarineAgent:
         """
         return array[point[0] - distance:point[0] + distance + 1, point[1] - distance:point[1] + distance + 1]
 
-    def percept_environment(self, updated_map, vision_mask):
+    def percept_environment(self, vision_mask):
         """
         ...
         :param updated_map:
         :param vision_mask:
         """
-        new_map = updated_map.copy()
-        new_map[vision_mask != True] = 0.0
-
-        if not self.vismap_stored:
-            self.vismap_scores = new_map
-            self.vismap_stored = True
-        else:
-            # ===== Generate scores for current vision ===== #
-            vismap_padded = np.pad(new_map, 2, self.pad_with, padder=0.)
-            for row in range(self.map_y_size):
-                for col in range(self.map_x_size):
-                    if vision_mask[row][col] and vismap_padded[row+2][col+2] != 0.0:
-                        if self.passability_map[row][col] != 0.0:
-                            area = self.create_area(vismap_padded, (row+2, col+2), distance=2).copy()
-                            area[area > self.valid_point_threshold] = 1
-                            area[area <= self.valid_point_threshold] = 0
-                            score = round(sum(area.flatten()) / (len(area) * len(area[0])), 2)
-                            self.vismap_scores[row][col] = score
-                        else:
-                            vismap_padded[row+2][col+2] = 0.0
-                            self.vismap_scores[row][col] = 0.0
+        new_map = self.vismap_scores.copy()
+        new_map[vision_mask == True] = 2.0
+        # ===== Generate scores for current vision ===== #
+        vismap_padded = np.pad(new_map, 2, self.pad_with, padder=0.)
+        for row in range(self.map_y_size):
+            for col in range(self.map_x_size):
+                if vision_mask[row][col]:
+                    if self.passability_map[row][col] != 0.0:
+                        area = self.create_area(vismap_padded, (row+2, col+2), distance=2).copy()
+                        area[area > self.valid_point_threshold] = 1
+                        area[area <= self.valid_point_threshold] = 0
+                        score = round(sum(area.flatten()) / (len(area) * len(area[0])), 2)
+                        self.vismap_scores[row][col] = score
+                    else:
+                        vismap_padded[row+2][col+2] = 0.0
+                        self.vismap_scores[row][col] = 0.0
 
     def apply_baneling_sof(self, baneling_masks):
         """
@@ -75,10 +70,17 @@ class MarineAgent:
         :return: void
         """
         for mask_set in baneling_masks:
-            self.vismap_scores[(mask_set[2] == True)] *= 0.9
-            self.vismap_scores[(mask_set[1] == True)] *= 0.6
+            self.vismap_scores[(mask_set[2] == True)] *= 0.8
+            self.vismap_scores[(mask_set[1] == True)] *= 0.5
             self.vismap_scores[(mask_set[0] == True)] *= 0.1
         self.vismap_scores = np.around(self.vismap_scores.copy(), 2)
+
+        # print("\n")
+        # for y in self.vismap_scores:
+        #     line = ""
+        #     for x in y:
+        #         line += str(f"{x} ")
+        #     print(line)
 
     def define_state(self):
         return
