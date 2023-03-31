@@ -1,4 +1,4 @@
-import time
+from time import sleep
 import numpy as np
 import pandas as pd
 from datetime import datetime
@@ -91,11 +91,12 @@ class GameBot(sc2.BotAI):
                 known_banes = [b for b in baneling_list if score_mask[b.position.rounded[1]][b.position.rounded[0]]]
                 if len(known_banes) > 0:
                     self.agent_dict[tag].apply_baneling_sof(self.create_baneling_masks(known_banes))
-                    time.sleep(0.05)
+                    sleep(0.05)
                     movement_mask = np.flip(self.create_circular_mask(agent.position, agent.sight_range), 0)
                     await self.do(agent.move(self.agent_dict[tag].take_action(movement_mask, known_banes)))
 
         if True == True:
+            # TODO: functiedecompensitie
             # itereer sc2.units.tag en src.GameBot-classobject
             for tag, agent in self.agent_dict.items():
                 # creeer apparte pointer voor alle agents
@@ -109,7 +110,12 @@ class GameBot(sc2.BotAI):
 
     def agent_pointer(self, tag):
         """pointer naar een agent"""
-        return self.units.find_by_tag(tag)
+        pointer_agent = self.units.find_by_tag(tag)
+        if pointer_agent == None:
+            self.agent_dict[tag].state_alive = False
+        # TODO: apply scores for sterven
+        return pointer_agent
+
 
     def history_to_excel(self, new):
         """schrijf gewenste informatie over het spel per iteratie weg naar een excel bestand"""

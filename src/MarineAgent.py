@@ -12,6 +12,7 @@ class MarineAgent:
         self.bmasks = []
         self.map_y_size = map_y_size
         self.map_x_size = map_x_size
+        self.state_alive = True  # state if enemy is alive or dead
 
     def pad_with(self, array, pad_width, iaxis, kwargs):
         """
