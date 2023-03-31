@@ -5,7 +5,7 @@ from src.GameBot import GameBot
 run_game(maps.get("marine_vs_baneling"),
          [
              Bot(Race.Terran, GameBot()),
-             Computer(Race.Zerg, Difficulty.VerryEasy)
+             Computer(Race.Zerg, Difficulty.VeryEasy)
          ], realtime=True)
 
 # Maps:
