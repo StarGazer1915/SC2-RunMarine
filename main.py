@@ -2,10 +2,10 @@ from sc2 import run_game, maps, Race, Difficulty
 from sc2.player import Bot, Computer
 from src.GameBot import GameBot
 
-run_game(maps.get("marine_vs_baneling_advanced_NoOverlord"),
+run_game(maps.get("marine_vs_baneling"),
          [
              Bot(Race.Terran, GameBot()),
-             Computer(Race.Zerg, Difficulty.Hard)
+             Computer(Race.Zerg, Difficulty.VerryEasy)
          ], realtime=True)
 
 # Maps:
