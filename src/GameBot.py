@@ -1,9 +1,11 @@
 import time
 import numpy as np
+import pandas as pd
+from datetime import datetime
 import sc2
-from sc2.constants import BANELING, MARINE
+# from sc2.constants import BANELING, MARINE
+from sc2.ids.unit_typeid import UnitTypeId
 from MarineAgent import MarineAgent
-
 
 class GameBot(sc2.BotAI):
     def __init__(self):
@@ -11,6 +13,7 @@ class GameBot(sc2.BotAI):
         self.pathing_map = np.array([])
         self.map_y_size = 0.
         self.map_x_size = 0.
+        self.history = pd.DataFrame()  # remember desired information
         super().__init__()
 
     def on_start(self):
@@ -21,13 +24,10 @@ class GameBot(sc2.BotAI):
         self.pathing_map = self.game_info.pathing_grid.data_numpy.astype("float64")
         self.map_y_size = len(self.pathing_map)
         self.map_x_size = len(self.pathing_map[0])
-        for agent in self.units.of_type(MARINE):
+        for agent in self.units.of_type(self.units.of_type(UnitTypeId.MARINE)):  #MARINE):
             self.agent_dict[str(agent.tag)] = MarineAgent(self.pathing_map, self.map_y_size, self.map_x_size)
-
         return super().on_start()
 
-    def update_agents(self):
-        pass
 
     # ==================== MASKING FUNCTIONS ==================== #
     def create_circular_mask(self, center=None, radius=None):
@@ -82,15 +82,21 @@ class GameBot(sc2.BotAI):
         """
         baneling_list = [unit for unit in self.known_enemy_units if unit.name == "Baneling"]
 
-        for agent in self.units.of_type(MARINE):
+        for agent in self.units.of_type(self.units.of_type(UnitTypeId.MARINE)):  #MARINE):
             tag = str(agent.tag)
             score_mask = np.flip(self.create_circular_mask(agent.position, agent.sight_range), 0)
             self.agent_dict[tag].position = agent.position
             self.agent_dict[tag].percept_environment(score_mask)
             known_banes = [b for b in baneling_list if score_mask[b.position.rounded[1]][b.position.rounded[0]]]
-
             if len(known_banes) > 0:
                 self.agent_dict[tag].apply_baneling_sof(self.create_baneling_masks(known_banes))
                 time.sleep(0.05)
                 movement_mask = np.flip(self.create_circular_mask(agent.position, agent.sight_range), 0)
                 await self.do(agent.move(self.agent_dict[tag].take_action(movement_mask, known_banes)))
+
+    def history_to_excel(self, new):
+        """schrijf gewenste informatie per iteratie weg naar een excel bestand"""
+        # concateneer bestaande history met nieuwe historie
+        self.history = pd.concat([self.history, pd.DataFrame(new)], axis=0)
+        # sla op als excel bestand
+        self.history.to_excel(f"array_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx", index=False)
