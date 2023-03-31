@@ -3,8 +3,8 @@ import numpy as np
 import pandas as pd
 from datetime import datetime
 import sc2
-# from sc2.constants import BANELING, MARINE
-from sc2.ids.unit_typeid import UnitTypeId
+from sc2.constants import BANELING, MARINE
+# from sc2.ids.unit_typeid import UnitTypeId
 from src.MarineAgent import MarineAgent
 
 class GameBot(sc2.BotAI):
@@ -24,7 +24,7 @@ class GameBot(sc2.BotAI):
         self.pathing_map = self.game_info.pathing_grid.data_numpy.astype("float64")
         self.map_y_size = len(self.pathing_map)
         self.map_x_size = len(self.pathing_map[0])
-        for agent in self.units.of_type(UnitTypeId.MARINE):  #MARINE):
+        for agent in self.units.of_type(MARINE):  #UnitTypeId.MARINE):
             self.agent_dict[str(agent.tag)] = MarineAgent(self.pathing_map, self.map_y_size, self.map_x_size)
         return super().on_start()
 
@@ -83,7 +83,7 @@ class GameBot(sc2.BotAI):
         baneling_list = [unit for unit in self.known_enemy_units if unit.name == "Baneling"]
 
         if True == False:
-            for agent in self.units.of_type(self.units.of_type(UnitTypeId.MARINE)):  #MARINE):
+            for agent in self.units.of_type(MARINE):  #UnitTypeId.MARINE):
                 tag = str(agent.tag)
                 score_mask = np.flip(self.create_circular_mask(agent.position, agent.sight_range), 0)
                 self.agent_dict[tag].position = agent.position
