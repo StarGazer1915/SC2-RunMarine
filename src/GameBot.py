@@ -94,8 +94,12 @@ class GameBot(sc2.BotAI):
                 movement_mask = np.flip(self.create_circular_mask(agent.position, agent.sight_range), 0)
                 await self.do(agent.move(self.agent_dict[tag].take_action(movement_mask, known_banes)))
 
+    def agent_pointer(self, tag):
+        """pointer naar een agent"""
+        return self.units.find_by_tag(tag)
+
     def history_to_excel(self, new):
-        """schrijf gewenste informatie per iteratie weg naar een excel bestand"""
+        """schrijf gewenste informatie over het spel per iteratie weg naar een excel bestand"""
         # concateneer bestaande history met nieuwe historie
         self.history = pd.concat([self.history, pd.DataFrame(new)], axis=0)
         # sla op als excel bestand
