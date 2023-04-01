@@ -84,8 +84,10 @@ class MarineAgent:
         #         line += str(f"{x} ")
         #     print(line)
 
-    def define_state(self):
-        return
+    def set_state(self):
+        """Verander toestanden van de marine naar de gewenste toestanden."""
+        # verander de toestand naar de inverse van zijn huidige toestand
+        self.state_alive = not self.state_alive
 
     def take_action(self, vision_mask, known_banes):
         """

@@ -112,7 +112,7 @@ class GameBot(sc2.BotAI):
         """pointer naar een agent"""
         pointer_agent = self.units.find_by_tag(tag)
         if pointer_agent == None:
-            self.agent_dict[tag].state_alive = False
+            self.agent_dict[tag].define_state
         # TODO: apply scores for sterven
         return pointer_agent
 
