@@ -1,11 +1,9 @@
-from time import sleep
 import numpy as np
-import pandas as pd
-from datetime import datetime
+import time
 import sc2
 from sc2.constants import BANELING, MARINE
-# from sc2.ids.unit_typeid import UnitTypeId
 from src.MarineAgent import MarineAgent
+
 
 class GameBot(sc2.BotAI):
     def __init__(self):
@@ -23,7 +21,7 @@ class GameBot(sc2.BotAI):
         self.pathing_map = self.game_info.pathing_grid.data_numpy.astype("float64")
         self.map_y_size = len(self.pathing_map)
         self.map_x_size = len(self.pathing_map[0])
-        for agent in self.units.of_type(MARINE):  #UnitTypeId.MARINE):
+        for agent in self.units.of_type(MARINE):
             self.agent_dict[str(agent.tag)] = MarineAgent(self.pathing_map, self.map_y_size, self.map_x_size)
         return super().on_start()
 
