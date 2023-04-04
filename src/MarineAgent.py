@@ -9,7 +9,6 @@ class MarineAgent:
         self.vismap_scores = np.zeros(shape=(map_x_size, map_y_size)).astype("float64")
         self.valid_point_threshold = 0.7
         self.passability_map = passability_map
-        self.bmasks = []
         self.map_y_size = map_y_size
         self.map_x_size = map_x_size
 
@@ -70,9 +69,9 @@ class MarineAgent:
         :return: void
         """
         for mask_set in baneling_masks:
-            self.vismap_scores[(mask_set[2] == True)] *= 0.9
-            self.vismap_scores[(mask_set[1] == True)] *= 0.6
-            self.vismap_scores[(mask_set[0] == True)] *= 0.1
+            self.vismap_scores[(mask_set[2] == True)] *= 0.9    # Bmask 3, sight_range, outer circle
+            self.vismap_scores[(mask_set[1] == True)] *= 0.7    # Bmask 2, sight_range - 3.0, medium circle
+            self.vismap_scores[(mask_set[0] == True)] *= 0.1    # Bmask 1, sight_range - 6.0, baneling touching
 
         self.vismap_scores = np.around(self.vismap_scores.copy(), 2)
 
@@ -86,7 +85,7 @@ class MarineAgent:
     def define_state(self):
         return
 
-    def take_action(self, vision_mask, known_banes):
+    def get_best_point(self, vision_mask, marine, known_banes):
         """
         This function looks at all the points inside the current vision of the agent and calculates the
         highest scoring point that is also the farthest away from the baneling. It then returns the move
@@ -95,24 +94,54 @@ class MarineAgent:
         :param known_banes: list of sc2 unit objects
         :return: sc2 move command
         """
-        highest_coor_in_vision = 0.0
-        highest_scoring_coor = (0.0, 0.0)
+        highest_point_in_vision = 0.0
+        highest_scoring_point = (0.0, 0.0)
         longest_distance_to_bane = 0.0
+        marine_position = (round(marine.position[0], 0), (-round(marine.position[1], 0) + 32))
+        baneling_position = (round(known_banes[0].position[0], 0), (-round(known_banes[0].position[1], 0) + 32))
 
         for row in range(self.map_y_size):
             for col in range(self.map_x_size):
                 if vision_mask[row][col]:
-                    # for baneling in known_banes:
-                    #     b_dist_to_p = baneling.distance_to(Point2((col, row)))
-                    #     m_dist_to_p = self.unit.distance_to(Point2((col, row)))
-                    # if m_dist_to_p < b_dist_to_p:
-                    if self.vismap_scores[row][col] >= highest_coor_in_vision:
-                        if known_banes[0].distance_to(Point2((col, row))) > longest_distance_to_bane:
-                            highest_coor_in_vision = self.vismap_scores[row][col]
-                            highest_scoring_coor = (col, (-row + 32))
-                            longest_distance_to_bane = round(known_banes[0].distance_to(Point2((col, row))), 2)
+                    if self.vismap_scores[row][col] > highest_point_in_vision:
+                        bane_dist_to_point = round(known_banes[0].distance_to(Point2((col, row))), 2)
+                        if bane_dist_to_point > longest_distance_to_bane:
+                            highest_point_in_vision = self.vismap_scores[row][col]
+                            highest_scoring_point = (col, row)
+                            longest_distance_to_bane = bane_dist_to_point
                         else:
-                            highest_coor_in_vision = self.vismap_scores[row][col]
-                            highest_scoring_coor = (col, (-row + 32))
+                            highest_point_in_vision = self.vismap_scores[row][col]
+                            highest_scoring_point = (col, row)
 
-        return Point2(highest_scoring_coor)
+        # ====================================================================================================== #
+        print(f"\n\nCHOSEN POINT: {highest_scoring_point}")
+        print(f"VISION MASK: ")
+        for row2 in range(len(vision_mask)):
+            line = ""
+            for point2 in range(len(vision_mask[row2])):
+                if int(point2) == int(highest_scoring_point[0]) and int(row2) == int(highest_scoring_point[1]):
+                    line += str(f"-GOAL- ")
+                elif int(point2) == int(marine_position[0]) and int(row2) == int(marine_position[1]):
+                    line += str(f"-TM- ")
+                elif int(point2) == int(baneling_position[0]) and int(row2) == int(baneling_position[1]):
+                    line += str(f"-ZB- ")
+                else:
+                    line += str(f"{vision_mask[row2][point2]} ")
+            print(line)
+
+        print(f"\nSCORES:")
+        for row2 in range(len(self.vismap_scores)):
+            line = ""
+            for point2 in range(len(self.vismap_scores[row2])):
+                if int(point2) == int(highest_scoring_point[0]) and int(row2) == int(highest_scoring_point[1]):
+                    line += str(f"-GOAL- ")
+                elif int(point2) == int(marine_position[0]) and int(row2) == int(marine_position[1]):
+                    line += str(f"-TM- ")
+                elif int(point2) == int(baneling_position[0]) and int(row2) == int(baneling_position[1]):
+                    line += str(f"-ZB- ")
+                else:
+                    line += str(f"{self.vismap_scores[row2][point2]} ")
+            print(line)
+        # ====================================================================================================== #
+        flipped_point = (highest_scoring_point[0], -highest_scoring_point[1] + 32)
+        return Point2(flipped_point)

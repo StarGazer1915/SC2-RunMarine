@@ -60,8 +60,8 @@ class GameBot(sc2.BotAI):
         for bane in known_banelings:
             pos = bane.position.rounded
             b_sight_range = bane.sight_range  # default 8.0
-            bmask1 = np.flip(self.create_circular_mask(pos, b_sight_range-4.0), 0)
-            bmask2 = np.flip(self.create_circular_mask(pos, b_sight_range-2.0), 0)
+            bmask1 = np.flip(self.create_circular_mask(pos, b_sight_range-6.0), 0)
+            bmask2 = np.flip(self.create_circular_mask(pos, b_sight_range-3.0), 0)
             bmask3 = np.flip(self.create_circular_mask(pos, b_sight_range), 0)
             mask_list.append([bmask1, bmask2, bmask3])
 
@@ -87,10 +87,8 @@ class GameBot(sc2.BotAI):
             score_mask = np.flip(self.create_circular_mask(agent.position, agent.sight_range), 0)
             self.agent_dict[tag].position = agent.position
             self.agent_dict[tag].percept_environment(score_mask)
-            known_banes = [b for b in baneling_list if score_mask[b.position.rounded[1]][b.position.rounded[0]]]
+            visible_banes = [b for b in baneling_list if score_mask[b.position.rounded[1]][b.position.rounded[0]]]
 
-            if len(known_banes) > 0:
-                self.agent_dict[tag].apply_baneling_sof(self.create_baneling_masks(known_banes))
-                time.sleep(0.05)
-                movement_mask = np.flip(self.create_circular_mask(agent.position, agent.sight_range), 0)
-                await self.do(agent.move(self.agent_dict[tag].take_action(movement_mask, known_banes)))
+            if len(visible_banes) >= 1:
+                self.agent_dict[tag].apply_baneling_sof(self.create_baneling_masks(visible_banes))
+                await self.do(agent.move(self.agent_dict[tag].get_best_point(score_mask, agent, visible_banes)))
