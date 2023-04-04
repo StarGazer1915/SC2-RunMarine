@@ -7,12 +7,10 @@ class MarineAgent:
         self.position = None
         self.vismap_stored = False
         self.vismap_scores = np.zeros(shape=(map_x_size, map_y_size)).astype("float64")
-        self.valid_point_threshold = 0.7
+        self.valid_point_threshold = 0.8
         self.passability_map = passability_map
-        self.bmasks = []
         self.map_y_size = map_y_size
         self.map_x_size = map_x_size
-        self.state_alive = True  # state if enemy is alive or dead
 
     def pad_with(self, array, pad_width, iaxis, kwargs):
         """
@@ -39,13 +37,15 @@ class MarineAgent:
 
     def percept_environment(self, vision_mask):
         """
-        ...
+        This function generates scores in the current vision. These scores are based on how passable the
+        points are and what their area contains (if the area contains a lot of passable points). The scores are
+        then calculated and stored in the agent's memory (self.vismap_scores).
         :param updated_map:
         :param vision_mask:
         """
         new_map = self.vismap_scores.copy()
         new_map[vision_mask == True] = 2.0
-        # ===== Generate scores for current vision ===== #
+
         vismap_padded = np.pad(new_map, 2, self.pad_with, padder=0.)
         for row in range(self.map_y_size):
             for col in range(self.map_x_size):
@@ -71,51 +71,37 @@ class MarineAgent:
         :return: void
         """
         for mask_set in baneling_masks:
-            self.vismap_scores[(mask_set[2] == True)] *= 0.9
-            self.vismap_scores[(mask_set[1] == True)] *= 0.6
-            self.vismap_scores[(mask_set[0] == True)] *= 0.1
+            self.vismap_scores[(mask_set[2] == True)] *= 0.9    # Bmask 3, sight_range, outer baneling vision
+            self.vismap_scores[(mask_set[1] == True)] *= 0.5    # Bmask 2, sight_range - 2.5, baneling attack range
+            self.vismap_scores[(mask_set[0] == True)] *= 0.1    # Bmask 1, sight_range - 6.0, baneling lethal zone
 
         self.vismap_scores = np.around(self.vismap_scores.copy(), 2)
 
-        # print("\n")
-        # for y in self.vismap_scores:
-        #     line = ""
-        #     for x in y:
-        #         line += str(f"{x} ")
-        #     print(line)
-
-    def set_state(self):
-        """Verander toestanden van de marine naar de gewenste toestanden."""
-        # verander de toestand naar de inverse van zijn huidige toestand
-        self.state_alive = not self.state_alive
-
-    def take_action(self, vision_mask, known_banes):
+    def get_best_point(self, vision_mask, known_banes):
         """
         This function looks at all the points inside the current vision of the agent and calculates the
-        highest scoring point that is also the farthest away from the baneling. It then returns the move
-        command with said point so the SC2bot can execute the move order.
+        highest scoring point that is also the farthest away from the baneling. It then returns the point
+        so that in this case the SC2bot can execute a move order.
         :param vision_mask: numpy array
         :param known_banes: list of sc2 unit objects
         :return: sc2 move command
         """
-        highest_coor_in_vision = 0.0
-        highest_scoring_coor = (0.0, 0.0)
+        highest_point_in_vision = 0.0
+        highest_scoring_point = (0.0, 0.0)
         longest_distance_to_bane = 0.0
 
         for row in range(self.map_y_size):
             for col in range(self.map_x_size):
                 if vision_mask[row][col]:
-                    # for baneling in known_banes:
-                    #     b_dist_to_p = baneling.distance_to(Point2((col, row)))
-                    #     m_dist_to_p = self.unit.distance_to(Point2((col, row)))
-                    # if m_dist_to_p < b_dist_to_p:
-                    if self.vismap_scores[row][col] >= highest_coor_in_vision:
-                        if known_banes[0].distance_to(Point2((col, row))) > longest_distance_to_bane:
-                            highest_coor_in_vision = self.vismap_scores[row][col]
-                            highest_scoring_coor = (col, (-row + 32))
-                            longest_distance_to_bane = round(known_banes[0].distance_to(Point2((col, row))), 2)
+                    bane_dist_to_point = round(known_banes[0].distance_to(Point2((col, row))), 0)
+                    if self.vismap_scores[row][col] >= highest_point_in_vision:
+                        if bane_dist_to_point >= longest_distance_to_bane:
+                            highest_point_in_vision = self.vismap_scores[row][col]
+                            highest_scoring_point = (col, row)
+                            longest_distance_to_bane = bane_dist_to_point
                         else:
-                            highest_coor_in_vision = self.vismap_scores[row][col]
-                            highest_scoring_coor = (col, (-row + 32))
+                            highest_point_in_vision = self.vismap_scores[row][col]
+                            highest_scoring_point = (col, row)
 
-        return Point2(highest_scoring_coor)
+        flipped_point = (highest_scoring_point[0], -highest_scoring_point[1] + self.map_y_size)
+        return Point2(flipped_point)
