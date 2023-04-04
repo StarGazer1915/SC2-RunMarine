@@ -26,10 +26,6 @@ class GameBot(sc2.BotAI):
 
         return super().on_start()
 
-    def update_agents(self):
-        pass
-
-    # ==================== MASKING FUNCTIONS ==================== #
     def create_circular_mask(self, center=None, radius=None):
         """
         This function creates a circular mask around a given index in a multidimensional array.
@@ -52,43 +48,40 @@ class GameBot(sc2.BotAI):
     def create_baneling_masks(self, known_banelings):
         """
         This function creates different masks (numpy arrays) with different ranges for the banelings in
-        the current vision (known banelings) and stores them in a list which it then returns.
+        the current vision (known banelings) and stores them in a list which it then returns. This can then
+        be used to apply the "Sphere of Fear" (SOF) around the baneling. See apply_baneling_sof() in MarineAgent.py
         :param known_banelings: list of sc2 units
         :return: list of masks
         """
         mask_list = []
         for bane in known_banelings:
             pos = bane.position.rounded
-            b_sight_range = bane.sight_range  # default 8.0
-            bmask1 = np.flip(self.create_circular_mask(pos, b_sight_range-6.0), 0)
-            bmask2 = np.flip(self.create_circular_mask(pos, b_sight_range-3.0), 0)
+            b_sight_range = bane.sight_range  # default is 8.0
+            bmask1 = np.flip(self.create_circular_mask(pos, b_sight_range - 6.0), 0)
+            bmask2 = np.flip(self.create_circular_mask(pos, b_sight_range - 2.5), 0)
             bmask3 = np.flip(self.create_circular_mask(pos, b_sight_range), 0)
             mask_list.append([bmask1, bmask2, bmask3])
 
         return mask_list
 
-    # ==================== STEP FUNCTION ==================== #
     async def on_step(self, iteration):
         """
-        Function step by step:
-        1. Get the updated vision map and all known banelings that the bot sees on the map
-        2. For each agent (marine):
-            2.1 Create the agent's scoremask, make the agent percept the environment and list the banelings in vision.
-            2.2 If there is a baneling in the agent's current vision:
-                2.2.1 Apply the baneling 'Sphere Of Fear (sof)' for each baneling in known_banes (agent vision).
-                2.2.2 Make the agent think of, and move to, the next best possible position.
-
+        This function executes the perception and actions of the agents inside the simulation (every step).
         :param iteration: iteration (sc2)
         """
         baneling_list = [unit for unit in self.known_enemy_units if unit.name == "Baneling"]
-
         for agent in self.units.of_type(MARINE):
+            # Update agent variables
             tag = str(agent.tag)
-            score_mask = np.flip(self.create_circular_mask(agent.position, agent.sight_range), 0)
             self.agent_dict[tag].position = agent.position
-            self.agent_dict[tag].percept_environment(score_mask)
-            visible_banes = [b for b in baneling_list if score_mask[b.position.rounded[1]][b.position.rounded[0]]]
 
-            if len(visible_banes) >= 1:
+            # Start behavior process
+            score_mask = np.flip(self.create_circular_mask(agent.position, agent.sight_range), 0)
+            self.agent_dict[tag].percept_environment(score_mask)
+            visible_banes = [b for b in baneling_list if \
+                             score_mask[(-b.position.rounded[1] + self.map_y_size)][b.position.rounded[0]]]
+
+            if len(visible_banes) > 0:
                 self.agent_dict[tag].apply_baneling_sof(self.create_baneling_masks(visible_banes))
-                await self.do(agent.move(self.agent_dict[tag].get_best_point(score_mask, agent, visible_banes)))
+                time.sleep(0.01)
+                await self.do(agent.move(self.agent_dict[tag].get_best_point(score_mask, visible_banes)))
