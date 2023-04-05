@@ -1,7 +1,8 @@
 import numpy as np
 import time
 import sc2
-from sc2.constants import BANELING, MARINE
+# from sc2.constants import BANELING, MARINE
+from sc2.ids.unit_typeid import UnitTypeId
 from src.MarineAgent import MarineAgent
 
 
@@ -21,7 +22,7 @@ class GameBot(sc2.BotAI):
         self.pathing_map = self.game_info.pathing_grid.data_numpy.astype("float64")
         self.map_y_size = len(self.pathing_map)
         self.map_x_size = len(self.pathing_map[0])
-        for agent in self.units.of_type(MARINE):
+        for agent in self.units.of_type(UnitTypeId.MARINE):  #MARINE):
             self.agent_dict[str(agent.tag)] = MarineAgent(self.pathing_map, self.map_y_size, self.map_x_size)
         return super().on_start()
 
@@ -69,7 +70,7 @@ class GameBot(sc2.BotAI):
         :param iteration: iteration (sc2)
         """
         baneling_list = [unit for unit in self.known_enemy_units if unit.name == "Baneling"]
-        for agent in self.units.of_type(MARINE):
+        for agent in self.units.of_type(UnitTypeId.MARINE):  #MARINE):
             # Update agent variables
             tag = str(agent.tag)
             self.agent_dict[tag].position = agent.position
