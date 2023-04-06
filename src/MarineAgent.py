@@ -6,7 +6,7 @@ class MarineAgent:
     def __init__(self, passability_map, map_y_size, map_x_size):
         self.position = None
         self.vismap_stored = False
-        self.vismap_scores = np.zeros(shape=(map_x_size, map_y_size)).astype("float64")
+        self.vismap_scores = np.zeros(shape=(map_y_size, map_x_size)).astype("float64")
         self.valid_point_threshold = 0.8
         self.passability_map = passability_map
         self.map_y_size = map_y_size
@@ -40,8 +40,8 @@ class MarineAgent:
         This function generates scores in the current vision. These scores are based on how passable the
         points are and what their area contains (if the area contains a lot of passable points). The scores are
         then calculated and stored in the agent's memory (self.vismap_scores).
-        :param updated_map:
-        :param vision_mask:
+        :param vision_mask: numpy array
+        :return: void
         """
         new_map = self.vismap_scores.copy()
         new_map[vision_mask == True] = 2.0
@@ -84,7 +84,7 @@ class MarineAgent:
         so that in this case the SC2bot can execute a move order.
         :param vision_mask: numpy array
         :param known_banes: list of sc2 unit objects
-        :return: sc2 move command
+        :return: sc2 Point2
         """
         highest_point_in_vision = 0.0
         highest_scoring_point = (0.0, 0.0)
@@ -103,5 +103,6 @@ class MarineAgent:
                             highest_point_in_vision = self.vismap_scores[row][col]
                             highest_scoring_point = (col, row)
 
+        # Flip Y axis because SC2 API map Y values are also flipped.
         flipped_point = (highest_scoring_point[0], -highest_scoring_point[1] + self.map_y_size)
         return Point2(flipped_point)
