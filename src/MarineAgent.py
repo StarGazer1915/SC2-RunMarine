@@ -13,7 +13,7 @@ class MarineAgent:
         self.map_x_size = map_x_size
         self.type = type
 
-        self.preformance_score = 0 
+        self.performance_score = 0 
         self.partner_agent: MarineAgent
         self.chosen_action: int
 
