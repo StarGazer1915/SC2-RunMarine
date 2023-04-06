@@ -3,7 +3,7 @@ from sc2.position import Point2
 
 
 class MarineAgent:
-    def __init__(self, passability_map, map_y_size, map_x_size):
+    def __init__(self, passability_map, map_y_size, map_x_size, atype):
         self.position = None
         self.vismap_stored = False
         self.vismap_scores = np.zeros(shape=(map_x_size, map_y_size)).astype("float64")
@@ -11,9 +11,8 @@ class MarineAgent:
         self.passability_map = passability_map
         self.map_y_size = map_y_size
         self.map_x_size = map_x_size
-        self.type = type
-
-        self.performance_score = 0 
+        self.atype = atype
+        self.performance_score = 0
         self.partner_agent: MarineAgent
         self.chosen_action: int
 
@@ -85,7 +84,7 @@ class MarineAgent:
     def take_greedy_action_from_actionmatrix(self, action_matrix: np.ndarray):
         # Look for the highest value only relevent for this agent and not its partner
         # A greedy look at the matrix of sorts
-        highest_score = np.max(action_matrix[:,:,0]) 
+        highest_score = np.max(action_matrix[:,:,0])
         hs_loc = np.unravel_index(np.argmax([action_matrix==highest_score]), action_matrix.shape)
 
         if hs_loc[0] or hs_loc[1]:
