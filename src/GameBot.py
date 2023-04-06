@@ -11,6 +11,7 @@ class GameBot(sc2.BotAI):
         self.pathing_map = np.array([])
         self.map_y_size = 0.
         self.map_x_size = 0.
+        self.action_matrix = np.array([[[3, 3], [1, 4]], [[4, 1], [2, 2]]], dtype=np.float16)
         super().__init__()
 
     def on_start(self):
