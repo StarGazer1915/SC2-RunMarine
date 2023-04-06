@@ -11,6 +11,11 @@ class MarineAgent:
         self.passability_map = passability_map
         self.map_y_size = map_y_size
         self.map_x_size = map_x_size
+        self.type = type
+
+        self.preformance_score = 0 
+        self.partner_agent: MarineAgent
+        self.chosen_action: int
 
     def pad_with(self, array, pad_width, iaxis, kwargs):
         """
