@@ -77,6 +77,19 @@ class MarineAgent:
 
         self.vismap_scores = np.around(self.vismap_scores.copy(), 2)
 
+    def take_greedy_action_from_actionmatrix(self, action_matrix: np.ndarray):
+        # Look for the highest value only relevent for this agent and not its partner
+        # A greedy look at the matrix of sorts
+        highest_score = np.max(action_matrix[:,:,0]) 
+        hs_loc = np.unravel_index(np.argmax([action_matrix==highest_score]), action_matrix.shape)
+
+        if hs_loc[0] or hs_loc[1]:
+            # Higest score in fleeing field
+            self.chosen_action = 0
+        else:
+            # Highest score in Attack field
+            self.chosen_action = 1
+
     def get_best_point(self, vision_mask, known_banes):
         """
         This function looks at all the points inside the current vision of the agent and calculates the
