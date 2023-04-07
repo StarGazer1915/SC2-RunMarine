@@ -14,7 +14,7 @@ class MarineAgent:
         self.atype = atype
         self.performance_score = 0
         self.partner_agent: MarineAgent
-        self.chosen_action: int
+        self.chosen_action: str
 
     def pad_with(self, array, pad_width, iaxis, kwargs):
         """
@@ -89,10 +89,10 @@ class MarineAgent:
 
         if hs_loc[0] or hs_loc[1]:
             # Higest score in fleeing field
-            self.chosen_action = 0
+            self.chosen_action = "Flee"
         else:
             # Highest score in Attack field
-            self.chosen_action = 1
+            self.chosen_action = "Attack"
 
     def get_best_point(self, vision_mask, known_banes):
         """
