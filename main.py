@@ -1,32 +1,12 @@
-import numpy as np
+import json
 from sc2 import run_game, maps, Race, Difficulty
 from sc2.player import Bot, Computer
 from src.GameBot import GameBot
 
-action_matrix = {
-    "Scores":{
-        "Attack": {
-            "Attack": (0., 0.),
-            "Flee": (0., 0.),
-        },
-        "Flee": {
-            "Attack": (0., 0.),
-            "Flee": (0., 0.),
-        },
-    },
-    # To keep track of the number of values have been added
-    # Helps with keeping a running average
-    "Counts":{
-        "Attack": {
-            "Attack": (0., 0.),
-            "Flee": (0., 0.),
-        },
-        "Flee": {
-            "Attack": (0., 0.),
-            "Flee": (0., 0.),
-        },
-    },
-}
+
+# Open the JSON file for reading and load the dictionary
+with open("action_matrix.json", "r") as f:
+    action_matrix = json.load(f)
 
 run_game(maps.get("marine_vs_baneling_advanced_NoOverlord_MultipleAgents"),
          [

@@ -1,3 +1,4 @@
+import json
 import numpy as np
 import time
 import sc2
@@ -83,6 +84,10 @@ class GameBot(sc2.BotAI):
             # Replace the old values
             self.action_matrix["Scores"][m1_action][m2_action] = new_payoffs
             self.action_matrix["Counts"][m1_action][m2_action] = (n0+1, n1+1)
+
+    def save_action_matrix_to_file(self, file="action_matrix.json"):
+        with open(file, "w") as f:
+            json.dump(self.action_matrix, f)
 
     def create_circular_mask(self, center=None, radius=None):
         """
