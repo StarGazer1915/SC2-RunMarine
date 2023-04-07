@@ -8,14 +8,15 @@ from sc2.position import Point2
 
 
 
+
 class GameBot(sc2.BotAI):
-    def __init__(self):
+    def __init__(self, action_matrix: dict[str, dict[str, dict[str, tuple[float, float]]]]):
         self.square_info_dictionaries = []
         self.agent_dict = {}
         self.pathing_map = np.array([])
         self.map_y_size = 0.
         self.map_x_size = 0.
-        self.action_matrix = np.array([[[3, 3], [1, 4]], [[4, 1], [2, 2]]], dtype=np.float16)
+        self.action_matrix = action_matrix
         self.marine_type_combinations = [["runner", "rational"], ["rational", "runner"], ["attacker", "rational"],
                                          ["rational", "attacker"], ["rational", "greedy"], ["greedy", "rational"],
                                          ["rational", "rational"], ["runner", "greedy"], ["greedy", "runner"],
@@ -54,6 +55,34 @@ class GameBot(sc2.BotAI):
         self.define_square_trios()
 
         return super().on_start()
+
+    def update_actionmatrix(self) -> None:
+        """Update the global actionmatrix with all the scores of the marineAgents from this iteration.
+        """
+
+        for agent in self.agent_dict.values():
+            m1_score = agent.performance_score 
+            m2_score = agent.partner_agent.performance_score
+
+            m1_action = agent.chosen_action
+            m2_action = agent.partner_agent.chosen_action
+            
+            # Update the action matrix with the new scores
+            old_payoffs = self.action_matrix["Scores"][m1_action][m2_action]
+            n0, n1 = self.action_matrix["Counts"][m1_action][m2_action]  # number of counts so far
+
+            # Calculate running average
+            if n0 != 0 and n1 != 0:
+                new_payoffs = (
+                    (old_payoffs[0] * n0 + m1_score) / (n0 + 1),
+                    (old_payoffs[1] * n1 + m2_score) / (n1 + 1)
+                )
+            else:
+                new_payoffs = (m1_score, m2_score)
+            
+            # Replace the old values
+            self.action_matrix["Scores"][m1_action][m2_action] = new_payoffs
+            self.action_matrix["Counts"][m1_action][m2_action] = (n0+1, n1+1)
 
     def create_circular_mask(self, center=None, radius=None):
         """
@@ -177,6 +206,7 @@ class GameBot(sc2.BotAI):
             return 0
         else:
             return 1
+        
     async def on_step(self, iteration):
         """
         This function executes the perception and actions of the agents inside the simulation (every step).
