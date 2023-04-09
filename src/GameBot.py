@@ -20,7 +20,7 @@ class GameBot(sc2.BotAI):
         :param iteration: iteration (sc2)
         """
         baneling_list = [unit for unit in self.known_enemy_units if unit.name == "Baneling"]
-        for agent in self.units.of_type(UnitTypeId.MARINE):  #MARINE):
+        for agent in self.units.of_type(UnitTypeId.MARINE):  # MARINE):
             # Update agent variables
             tag = str(agent.tag)
             self.agent_dict[tag].position = agent.position
@@ -36,7 +36,6 @@ class GameBot(sc2.BotAI):
                 time.sleep(0.01)
                 await self.do(agent.move(self.agent_dict[tag].get_best_point(score_mask, visible_banes)))
 
-
     def on_start(self):
         """
         Defines variables and attributes when the environment is initialized.
@@ -45,7 +44,7 @@ class GameBot(sc2.BotAI):
         self.pathing_map = self.game_info.pathing_grid.data_numpy.astype("float64")
         self.map_y_size = len(self.pathing_map)
         self.map_x_size = len(self.pathing_map[0])
-        for agent in self.units.of_type(UnitTypeId.MARINE):  #MARINE):
+        for agent in self.units.of_type(UnitTypeId.MARINE):  # MARINE):
             self.agent_dict[str(agent.tag)] = MarineAgent(self.pathing_map, self.map_y_size, self.map_x_size)
         return super().on_start()
 
@@ -86,3 +85,10 @@ class GameBot(sc2.BotAI):
             mask_list.append([bmask1, bmask2, bmask3])
 
         return mask_list
+
+    @staticmethod
+    def get_coordinates_middlepoint(y, x, boxes):
+        coordinates = []
+        for i in range(int(y // (boxes * 2)), y, int(y // boxes)):
+            coordinates.append((i, int(x // 2)))
+        return coordinates
