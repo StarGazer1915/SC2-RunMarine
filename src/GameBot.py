@@ -1,5 +1,5 @@
-import matplotlib as plt
-¶import numpy as np
+import matplotlib.pyplot as plt
+import numpy as np
 import time
 import sc2
 # from sc2.constants import BANELING, MARINE
@@ -94,9 +94,11 @@ class GameBot(sc2.BotAI):
             coordinates.append((i, int(x // 2)))
         return coordinates
 
-    @staticmethod
-    def plot_centerpoints():
-        coordinates = get_coordinates_middlepoint()
+    def plot_centerpoints(self):
+        boxes = 4
+        y = self.map_y_size
+        x = self.map_x_size
+        coordinates = self.get_coordinates_middlepoint(y, x, boxes)
         # Create a new figure and axis
         fig, ax = plt.subplots()
         # Set the aspect ratio to equal
