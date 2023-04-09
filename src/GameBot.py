@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import time
 import sc2
+from sc2.position import Point2
 # from sc2.constants import BANELING, MARINE
 from sc2.ids.unit_typeid import UnitTypeId
 from src.MarineAgent import MarineAgent
@@ -21,21 +22,22 @@ class GameBot(sc2.BotAI):
         :param iteration: iteration (sc2)
         """
         baneling_list = [unit for unit in self.known_enemy_units if unit.name == "Baneling"]
-        for agent in self.units.of_type(UnitTypeId.MARINE):  # MARINE):
+        for tag, agent in self.agent_dict.items():
+            # pointer naar sc.units.unit-klasse van specifieke marine
+            agent_unit = self.units.find_by_tag(tag)
             # Update agent variables
-            tag = str(agent.tag)
-            self.agent_dict[tag].position = agent.position
+            agent.position = agent_unit.position
 
             # Start behavior process
-            score_mask = np.flip(self.create_circular_mask(agent.position, agent.sight_range), 0)
-            self.agent_dict[tag].percept_environment(score_mask)
+            score_mask = np.flip(self.create_circular_mask(agent.position, agent_unit.sight_range), 0)
+            agent.percept_environment(score_mask)
             visible_banes = [b for b in baneling_list if \
                              score_mask[(-b.position.rounded[1] + self.map_y_size)][b.position.rounded[0]]]
 
             if len(visible_banes) > 0:
-                self.agent_dict[tag].apply_baneling_sof(self.create_baneling_masks(visible_banes))
+                agent.apply_baneling_sof(self.create_baneling_masks(visible_banes))
                 time.sleep(0.01)
-                await self.do(agent.move(self.agent_dict[tag].get_best_point(score_mask, visible_banes)))
+                await self.do(agent_unit.move(self.agent_dict[tag].get_best_point(score_mask, visible_banes)))
 
     def on_start(self):
         """
@@ -45,8 +47,14 @@ class GameBot(sc2.BotAI):
         self.pathing_map = self.game_info.pathing_grid.data_numpy.astype("float64")
         self.map_y_size = len(self.pathing_map)
         self.map_x_size = len(self.pathing_map[0])
-        for agent in self.units.of_type(UnitTypeId.MARINE):  # MARINE):
-            self.agent_dict[str(agent.tag)] = MarineAgent(self.pathing_map, self.map_y_size, self.map_x_size)
+        # TODO: get coordinates
+        # vraag middenpunt/coordinates van iedere box op
+        coordinates_middlepoint = self.get_coordinates_middlepoint()
+        # itereer over middenpunt/coordinates van iedere box op
+        for coordinate_middlepoint in coordinates_middlepoint:
+            # creeer MarineAgent-object voor marine die het dichts bij de coordinaat staat
+            self.agent_dict[self.units.sorted_by_distance_to(Point2(reversed(coordinate_middlepoint)))[0].tag] = \
+                MarineAgent(self.pathing_map, self.map_y_size, self.map_x_size)
         return super().on_start()
 
     def create_circular_mask(self, center=None, radius=None):
@@ -87,8 +95,9 @@ class GameBot(sc2.BotAI):
 
         return mask_list
 
-    @staticmethod
-    def get_coordinates_middlepoint(y, x, boxes):
+    def get_coordinates_middlepoint(self):
+        boxes = 4
+        y, x = self.map_y_size, self.map_x_size
         coordinates = []
         for i in range(int(y // (boxes * 2)), y, int(y // boxes)):
             coordinates.append((i, int(x // 2)))
@@ -98,7 +107,7 @@ class GameBot(sc2.BotAI):
         boxes = 4
         y = self.map_y_size
         x = self.map_x_size
-        coordinates = self.get_coordinates_middlepoint(y, x, boxes)
+        coordinates = self.get_coordinates_middlepoint()
         # Create a new figure and axis
         fig, ax = plt.subplots()
         # Set the aspect ratio to equal
@@ -128,4 +137,3 @@ class GameBot(sc2.BotAI):
         # plt.show()
         plt.draw()
         fig1.savefig('coordinates_middlepoint.png', dpi=720)
-    plot_centerpoints()
