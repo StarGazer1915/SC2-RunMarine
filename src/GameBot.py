@@ -1,4 +1,5 @@
-import numpy as np
+import matplotlib as plt
+¶import numpy as np
 import time
 import sc2
 # from sc2.constants import BANELING, MARINE
@@ -92,3 +93,37 @@ class GameBot(sc2.BotAI):
         for i in range(int(y // (boxes * 2)), y, int(y // boxes)):
             coordinates.append((i, int(x // 2)))
         return coordinates
+
+    @staticmethod
+    def plot_centerpoints():
+        coordinates = get_coordinates_middlepoint()
+        # Create a new figure and axis
+        fig, ax = plt.subplots()
+        # Set the aspect ratio to equal
+        ax.set_aspect('equal')
+        # Set the limits of the axis
+        ax.set_ylim(0, y)
+        ax.set_xlim(0, x)
+        step = int(y / boxes)
+        y_ticks = [i for i in range(0, y, step)] + [y]
+        x_ticks = [i for i in range(0, x, int(step // 2))] + [x]
+        ax.set_yticks(y_ticks)
+        ax.set_xticks(x_ticks)
+        y_scatter = [i[0] for i in coordinates]
+        x_scatter = [i[1] for i in coordinates]
+        plt.scatter(x_scatter, y_scatter, s=5, c='r', label='middenpunt')
+        for i in range(1, boxes):
+            if i == 1:
+                plt.axhline(y=i * step, linestyle='-', color='black', label='scheidingswand')
+            else:
+                plt.axhline(y=i * step, linestyle='-', color='black')
+        # Set the axis labels and title
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        ax.set_title('middenpunt van agents', pad=20)
+        ax.legend(loc='upper right', bbox_to_anchor=(3, 1))
+        fig1 = plt.gcf()
+        # plt.show()
+        plt.draw()
+        fig1.savefig('coordinates_middlepoint.png', dpi=720)
+    plot_centerpoints()
