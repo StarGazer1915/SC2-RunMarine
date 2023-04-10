@@ -13,7 +13,7 @@ class MarineAgent:
         self.map_y_size = map_y_size
         self.map_x_size = map_x_size
         self.tag = tag
-        self.atype = str
+        self.atype = ""
         self.performance_score = 0
         self.partner_agent_tag = 0
         self.chosen_action = ""
@@ -83,27 +83,29 @@ class MarineAgent:
 
         self.vismap_scores = np.around(self.vismap_scores.copy(), 2)
 
-    def Take_action_from_actionmatrix(self, action_matrix: np.ndarray):
+    def take_action_from_action_matrix(self, action_matrix):
         # Look for the highest value only relevant for this agent and not its partner
         # A greedy look at the matrix of sorts
         if self.atype == "greedy":
-            highest_score = np.max(action_matrix[:, :, 0])
-            hs_loc = np.unravel_index(np.argmax([action_matrix == highest_score]), action_matrix.shape)
-
-            if hs_loc[0] or hs_loc[1]:
-                # Highest score in fleeing field
-                self.chosen_action = "Flee"
-            else:
-                # Highest score in Attack field
-                self.chosen_action = "Attack"
+            # TODO Line below gives -> TypeError: unhashable type: 'slice' | @UnknownZandBak
+            # highest_score = np.max(action_matrix[:, :, 0])
+            # hs_loc = np.unravel_index(np.argmax([action_matrix == highest_score]), action_matrix.shape)
+            #
+            # if hs_loc[0] or hs_loc[1]:
+            #     # Highest score in fleeing field
+            #     self.chosen_action = "flee"
+            # else:
+            #     # Highest score in attack field
+            #     self.chosen_action = "attack"
+            self.chosen_action = choice(["attack", "flee"])
         elif self.atype == "rational":
-            #TODO Implement correct functionality for rational agent @UnknownZandBak
-            self.chosen_action = choice(["Attack", "Flee"])
+            #TODO Implement correct functionality for rational agent | @UnknownZandBak
+            self.chosen_action = choice(["attack", "flee"])
             pass
         elif self.atype == "attacker":
-            self.chosen_action = "Attack"
+            self.chosen_action = "attack"
         else:
-            self.chosen_action = "Flee"
+            self.chosen_action = "flee"
 
     def get_best_point(self, vision_mask, known_banes):
         """

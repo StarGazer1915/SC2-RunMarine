@@ -9,7 +9,6 @@ from random import choice
 from src.MarineAgent import MarineAgent
 
 
-
 class GameBot(sc2.BotAI):
     def __init__(self, action_matrix):
         self.square_info_dictionaries = []
@@ -30,11 +29,10 @@ class GameBot(sc2.BotAI):
         :return: void
         """
         self.pathing_map = self.game_info.pathing_grid.data_numpy.astype("float64")
-        self.map_y_size = len(self.pathing_map)
-        self.map_x_size = len(self.pathing_map[0])
+        self.map_y_size = float(len(self.pathing_map))
+        self.map_x_size = float(len(self.pathing_map[0]))
 
         type_combinations = self.marine_type_combinations
-        type_combination = []
 
         for agent in self.units.of_type(MARINE):
             self.agent_dict[str(agent.tag)] = MarineAgent(self.pathing_map, self.map_y_size, self.map_x_size, agent.tag)
@@ -43,39 +41,26 @@ class GameBot(sc2.BotAI):
 
         for d in self.square_info_dictionaries:
             type_combination = choice(type_combinations)
-            self.agent_dict[str(d[f"marine1"])].type = type_combination[0]
-            self.agent_dict[str(d[f"marine2"])].type = type_combination[1]
+            self.agent_dict[str(d[f"marine1"])].atype = type_combination[0]
+            self.agent_dict[str(d[f"marine2"])].atype = type_combination[1]
             type_combinations.pop(type_combinations.index(type_combination))
 
-            # for i in range(1, 3):
-            #     if len(type_combination) <= 0:  # fetch a new type combination if the current one is empty
-            #         # fetch a random marine type combination from all type combinations
-            #         type_combination = choice(type_combinations)
-            #         # remove the chosen combination from the list
-            #         type_combinations.pop(type_combinations.index(type_combination))
-            #
-            #         # fetch the type for the marine being selected and remove it from the selected combination
-            #         type_combination.pop(0)
-            #         self.agent_dict[str(d[f"marine{i}"])].type = type_combination[0]
-            #
-            #     else:
-            #         type_combination.pop(0)
-            #         print(type_combination)
-            #         self.agent_dict[str(d[f"marine{i}"])].type = type_combination[0]
+        for tag in self.agent_dict:
+            self.agent_dict[tag].take_action_from_action_matrix(self.action_matrix)
 
         return super().on_start()
 
-    def update_actionmatrix(self) -> None:
+    def update_action_matrix(self):
         """
         Update the global actionmatrix with all the scores of the marineAgents from this iteration.
         """
         for agent in self.agent_dict.values():
             if agent.atype == "rational":
                 m1_score = agent.performance_score
-                m2_score = agent.partner_agent.performance_score
+                m2_score = self.agent_dict[str(agent.partner_agent_tag)].performance_score
 
                 m1_action = agent.chosen_action
-                m2_action = agent.partner_agent.chosen_action
+                m2_action = self.agent_dict[str(agent.partner_agent_tag)].chosen_action
 
                 # Update the action matrix with the new scores
                 old_payoffs = self.action_matrix["Scores"][m1_action][m2_action]
@@ -93,6 +78,8 @@ class GameBot(sc2.BotAI):
                 # Replace the old values
                 self.action_matrix["Scores"][m1_action][m2_action] = new_payoffs
                 self.action_matrix["Counts"][m1_action][m2_action] = (n0+1, n1+1)
+
+        self.save_action_matrix_to_file()
 
     def save_action_matrix_to_file(self, file="action_matrix.json"):
         with open(file, "w") as f:
@@ -118,7 +105,6 @@ class GameBot(sc2.BotAI):
         return dist_from_center <= radius
 
     def define_square_trios(self):
-        # itereer over alle vijandposities
         for enemy in self.known_enemy_units:
             baneling_tag = enemy.tag
             enemy_position = enemy.position
@@ -214,7 +200,6 @@ class GameBot(sc2.BotAI):
         :return:
         """
         unit = self.state.units.find_by_tag(unit_tag)
-
         # Check if the unit still exists
         if unit is None:
             return 0
@@ -226,32 +211,43 @@ class GameBot(sc2.BotAI):
         This function executes the perception and actions of the agents inside the simulation (every step).
         :param iteration: iteration (sc2)
         """
-        baneling_list = [unit for unit in self.known_enemy_units if unit.name == "Baneling"]
-        for agent in self.units.of_type(MARINE):
-            # Update agent variables
-            tag = str(agent.tag)
-            self.agent_dict[tag].position = agent.position
+        if self.time <= 12:
+            baneling_list = [unit for unit in self.known_enemy_units if unit.name == "Baneling"]
+            for agent in self.units.of_type(MARINE):
+                # ========== Update agent variables ========== #
+                tag = str(agent.tag)
+                self.agent_dict[tag].position = agent.position
 
-            # Start behavior process
-            score_mask = np.flip(self.create_circular_mask(agent.position, agent.sight_range), 0)
-            self.agent_dict[tag].percept_environment(score_mask)
-            visible_banes = [b for b in baneling_list if \
-                             score_mask[(-b.position.rounded[1] + self.map_y_size)][b.position.rounded[0]]]
+                # ========== Start behaviour process ========== #
+                score_mask = np.flip(self.create_circular_mask(agent.position, agent.sight_range), 0)
+                self.agent_dict[tag].percept_environment(score_mask)
+                visible_banes = [b for b in baneling_list if \
+                                 score_mask[(-b.position.rounded[1] + self.map_y_size)][b.position.rounded[0]]]
 
-            if len(visible_banes) > 0:
-                self.agent_dict[tag].apply_baneling_sof(self.create_baneling_masks(visible_banes))
-                time.sleep(0.01)
-                await self.do(agent.move(self.agent_dict[tag].get_best_point(score_mask, visible_banes)))
+                time.sleep(0.01)  # Delay to save performance
+                if len(visible_banes) > 0:
+                    # ========== Execute actions ========== #
+                    self.agent_dict[tag].apply_baneling_sof(self.create_baneling_masks(visible_banes))
+                    if self.agent_dict[tag].atype == "attacker":
+                        await self.do(agent.attack(visible_banes[0]))
+                    elif self.agent_dict[tag].atype == "greedy":
+                        pass
+                    elif self.agent_dict[tag].atype == "rational":
+                        pass
+                    else:
+                        await self.do(agent.move(self.agent_dict[tag].get_best_point(score_mask, visible_banes)))
 
-
-        if self.time > 20:
-            self.give_scores(True)
-            self.update_actionmatrix()
-            #TODO start a new game/epoch of marines and banelings
-
-            # self.agent_dict
-
-            sys.exit()
-        else:
             self.give_scores()
 
+        else:
+            self.give_scores(True)
+            # self.update_action_matrix()
+
+            print("\n\n")
+            for agent in self.agent_dict.values():
+                print(f"Agent: {agent.tag} | Type: {agent.atype} | "
+                      f"Chosen Action: {agent.chosen_action} | Score = {agent.performance_score}")
+            print("\n")
+
+            # TODO start a new game/epoch of marines and banelings
+            sys.exit()
