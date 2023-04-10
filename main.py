@@ -5,8 +5,12 @@ from src.GameBot import GameBot
 
 
 # Open the JSON file for reading and load the dictionary
-with open("action_matrix.json", "r") as f:
-    action_matrix = json.load(f)
+try:
+    with open("action_matrix.json", "r") as f:
+        action_matrix = json.load(f)
+except:
+    with open("action_matrix_template.json", "r") as f:
+        action_matrix = json.load(f)
 
 run_game(maps.get("12SquareMarinevsBaneling"),
          [

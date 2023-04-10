@@ -83,24 +83,42 @@ class MarineAgent:
 
         self.vismap_scores = np.around(self.vismap_scores.copy(), 2)
 
+    def define_matrix_scores(self, adict):
+        choices = []
+        scores = []
+        for cat in adict["Scores"]:
+            for subcat in adict["Scores"][cat]:
+                choices.append([f"{cat}", f"{subcat}"])
+                scores.append(adict["Scores"][cat][subcat])
+
+        return [choices, scores]
+
+    def find_rational_best_choice(self, adict):
+        pairs = self.define_matrix_scores(adict)
+        highest_score = max(pairs[1])  # Get largest scoring pair
+        best_combo = pairs[0][pairs[1].index(highest_score)]  # See what combo of choices that is
+        return best_combo[0]  # Return own choice for that combo of choices
+
+    def find_greediest_choice(self, adict):
+        pairs = self.define_matrix_scores(adict)
+
+        choices_flat = list(np.array(pairs[0]).flatten())  # Flatten to get all own possible choices (selfish choice)
+        choices = [choices_flat[i] for i in range(0, len(choices_flat), 2)]
+
+        scores_flat = list(np.array(pairs[1]).flatten())  # Flatten to get all possible scores (selfish score)
+        scores = [scores_flat[i] for i in range(0, len(choices_flat), 2)]
+
+        highest_score = max(scores)
+        best_choice = choices[scores.index(highest_score)]
+        return best_choice
+
     def take_action_from_action_matrix(self, action_matrix):
         # Look for the highest value only relevant for this agent and not its partner
         # A greedy look at the matrix of sorts
         if self.atype == "greedy":
-            # TODO Line below gives -> TypeError: unhashable type: 'slice' | @UnknownZandBak
-            highest_score = np.max(action_matrix[:, :, 0])
-            hs_loc = np.unravel_index(np.argmax([action_matrix == highest_score]), action_matrix.shape)
-
-            if hs_loc[0] or hs_loc[1]:
-                # Highest score in fleeing field
-                self.chosen_action = "Flee"
-            else:
-                # Highest score in attack field
-                self.chosen_action = "Attack"
+            self.chosen_action = self.find_greediest_choice(action_matrix)
         elif self.atype == "rational":
-            #TODO Implement correct functionality for rational agent | @UnknownZandBak
-            self.chosen_action = choice(["Attack", "Flee"])
-            pass
+            self.chosen_action = self.find_rational_best_choice(action_matrix)
         elif self.atype == "attacker":
             self.chosen_action = "Attack"
         else:

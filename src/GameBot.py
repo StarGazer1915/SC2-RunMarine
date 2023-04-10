@@ -241,13 +241,13 @@ class GameBot(sc2.BotAI):
 
         else:
             self.give_scores(True)
-            # self.update_action_matrix()
+            self.update_action_matrix()
 
-            print("\n\n")
-            for agent in self.agent_dict.values():
-                print(f"Agent: {agent.tag} | Type: {agent.atype} | "
-                      f"Chosen Action: {agent.chosen_action} | Score = {agent.performance_score}")
-            print("\n")
+            # print("\n\n")
+            # for agent in self.agent_dict.values():
+            #     print(f"Agent: {agent.tag} | Type: {agent.atype} | "
+            #           f"Chosen Action: {agent.chosen_action} | Score = {agent.performance_score}")
+            # print("\n")
 
             # TODO start a new game/epoch of marines and banelings
             sys.exit()
