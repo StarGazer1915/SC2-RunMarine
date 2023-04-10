@@ -92,6 +92,11 @@ class GameBot(sc2.BotAI):
         with open(file, "w") as f:
             json.dump(self.action_matrix, f)
 
+    def save_agent_data(self):
+        with open("agent_data.csv", "a") as data_file:
+            for agent in self.agent_dict.values():
+                data_file.write(f"{agent.tag};{agent.atype};{agent.chosen_action};{agent.performance_score}\n")
+
     def create_circular_mask(self, center=None, radius=None):
         """
         This function creates a circular mask around a given index in a multidimensional array.
@@ -243,12 +248,9 @@ class GameBot(sc2.BotAI):
         else:
             self.give_scores(True)
             self.update_action_matrix()
+            self.save_agent_data()
             self.save_action_matrix_to_file()
 
-            # print("\n\n")
-            # for agent in self.agent_dict.values():
-            #     print(f"Agent: {agent.tag} | Type: {agent.atype} | "
-            #           f"Chosen Action: {agent.chosen_action} | Score = {agent.performance_score}")
-            # print("\n")
+         
 
             await self._client.leave()
