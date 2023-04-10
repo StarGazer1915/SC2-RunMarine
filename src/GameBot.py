@@ -29,8 +29,8 @@ class GameBot(sc2.BotAI):
         :return: void
         """
         self.pathing_map = self.game_info.pathing_grid.data_numpy.astype("float64")
-        self.map_y_size = float(len(self.pathing_map))
-        self.map_x_size = float(len(self.pathing_map[0]))
+        self.map_y_size = len(self.pathing_map)
+        self.map_x_size = len(self.pathing_map[0])
 
         type_combinations = self.marine_type_combinations
 

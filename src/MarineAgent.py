@@ -88,24 +88,23 @@ class MarineAgent:
         # A greedy look at the matrix of sorts
         if self.atype == "greedy":
             # TODO Line below gives -> TypeError: unhashable type: 'slice' | @UnknownZandBak
-            # highest_score = np.max(action_matrix[:, :, 0])
-            # hs_loc = np.unravel_index(np.argmax([action_matrix == highest_score]), action_matrix.shape)
-            #
-            # if hs_loc[0] or hs_loc[1]:
-            #     # Highest score in fleeing field
-            #     self.chosen_action = "flee"
-            # else:
-            #     # Highest score in attack field
-            #     self.chosen_action = "attack"
-            self.chosen_action = choice(["attack", "flee"])
+            highest_score = np.max(action_matrix[:, :, 0])
+            hs_loc = np.unravel_index(np.argmax([action_matrix == highest_score]), action_matrix.shape)
+
+            if hs_loc[0] or hs_loc[1]:
+                # Highest score in fleeing field
+                self.chosen_action = "Flee"
+            else:
+                # Highest score in attack field
+                self.chosen_action = "Attack"
         elif self.atype == "rational":
             #TODO Implement correct functionality for rational agent | @UnknownZandBak
-            self.chosen_action = choice(["attack", "flee"])
+            self.chosen_action = choice(["Attack", "Flee"])
             pass
         elif self.atype == "attacker":
-            self.chosen_action = "attack"
+            self.chosen_action = "Attack"
         else:
-            self.chosen_action = "flee"
+            self.chosen_action = "Flee"
 
     def get_best_point(self, vision_mask, known_banes):
         """
