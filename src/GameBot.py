@@ -2,10 +2,10 @@ import sys
 import numpy as np
 import time
 import json
+from random import choice
 import sc2
 from sc2.constants import BANELING, MARINE
 from sc2.position import Point2
-from random import choice
 from src.MarineAgent import MarineAgent
 
 
@@ -31,20 +31,21 @@ class GameBot(sc2.BotAI):
         self.pathing_map = self.game_info.pathing_grid.data_numpy.astype("float64")
         self.map_y_size = len(self.pathing_map)
         self.map_x_size = len(self.pathing_map[0])
-
         type_combinations = self.marine_type_combinations
 
+        # Define all agents in the current environment
         for agent in self.units.of_type(MARINE):
             self.agent_dict[str(agent.tag)] = MarineAgent(self.pathing_map, self.map_y_size, self.map_x_size, agent.tag)
 
+        # Define the combinations of agent 'personalities' / types and assign them
         self.define_square_trios()
-
         for d in self.square_info_dictionaries:
             type_combination = choice(type_combinations)
             self.agent_dict[str(d[f"marine1"])].atype = type_combination[0]
             self.agent_dict[str(d[f"marine2"])].atype = type_combination[1]
             type_combinations.pop(type_combinations.index(type_combination))
 
+        # Define what actions the agents are going to take based on their 'personality' / type
         for tag in self.agent_dict:
             self.agent_dict[tag].take_action_from_action_matrix(self.action_matrix)
 
@@ -52,7 +53,8 @@ class GameBot(sc2.BotAI):
 
     def update_action_matrix(self):
         """
-        Update the global actionmatrix with all the scores of the marineAgents from this iteration.
+        Update the global action_matrix with all the scores of the marineAgents from this iteration.
+        :return: void
         """
         for agent in self.agent_dict.values():
             if agent.atype == "rational":
@@ -82,18 +84,23 @@ class GameBot(sc2.BotAI):
         self.save_action_matrix_to_file()
 
     def save_action_matrix_to_file(self, file="action_matrix.json"):
+        """
+        This function saves the current action_matrix to a .json file.
+        :param file: string
+        :return: void
+        """
         with open(file, "w") as f:
             json.dump(self.action_matrix, f)
 
     def create_circular_mask(self, center=None, radius=None):
         """
         This function creates a circular mask around a given index in a multidimensional array.
-        In this case it would be the StarCraft II map. It then returns this mask as a numpy array
-        with boolean values (True = Mask). This is used to (for example) create 'vision masks'
+        In this case it will be in the StarCraft II map. It then returns this mask as a numpy array
+        with boolean values (True = Mask). This is used (for example) to create 'vision masks'
         to determine the vision of a specific sc2 unit using the unit.sight_range attribute.
         :param center: tuple
         :param radius: int/float
-        :return: numpy array
+        :return: numpy array (booleans)
         """
         if center is None:  # use the middle
             center = (int(self.map_x_size / 2), int(self.map_y_size / 2))
@@ -105,6 +112,11 @@ class GameBot(sc2.BotAI):
         return dist_from_center <= radius
 
     def define_square_trios(self):
+        """
+        This function defines what marines are next to each other and which baneling is near them. It stores
+        this in a list of dictionaries to be used in other functions.
+        :return: void
+        """
         for enemy in self.known_enemy_units:
             baneling_tag = enemy.tag
             enemy_position = enemy.position
@@ -142,12 +154,9 @@ class GameBot(sc2.BotAI):
 
     def give_scores(self, last_step = False):
         """
-        :param square_sate: a dictionary containing the classes of the marines in the square and the tag of the baneling
-        something like the following:
-        square_info = {"marine1" : class.marine(name=pedro, move=attack, type=rational, tag=3940239, score=0)
-                       "marine2" : class.marine(name=jan, move=run, type=runner, tag=12084234, score=0)
-                       baneling_tag : 120930239}
-        :return:
+        This function updates the scores of agents based on their performance.
+        :param last_step: boolean
+        :return: void
         """
         for square_info in self.square_info_dictionaries:
             m1_tag = square_info["marine1"]
@@ -174,34 +183,31 @@ class GameBot(sc2.BotAI):
                 else:
                     self.agent_dict[f"{m2_tag}"].performance_score -= 2
 
-                if not state[2] and self.agent_dict[f"{m1_tag}"].chosen_action == "Attack":
-                    self.agent_dict[f"{m1_tag}"].performance_score += 2
+                if not state[2] and self.agent_dict[f"{m1_tag}"].chosen_action == "Attack" \
+                        and self.agent_dict[f"{m2_tag}"].chosen_action == "Attack":
+                    self.agent_dict[f"{m1_tag}"].performance_score += 4
+                    self.agent_dict[f"{m2_tag}"].performance_score += 4
 
-                if not state[2] and self.agent_dict[f"{m2_tag}"].chosen_action == "Attack":
-                    self.agent_dict[f"{m2_tag}"].performance_score += 2
 
     def check_square_state(self, m1_tag, m2_tag, b_tag):
         """
-        returns a list with ones and zeros like this "[1,1,1]" one repsresnts alive nad zero represents dead
-        so in the example of the list [1,1,1] both marines and the baneling of a sqaure are alive. with the list [1,0,0]
-        only marine 1 is alive and both marine 2 and the baneling of the square are dead.
-        :param m1_tag: tag of marine 1
-        :param m2_tag: tag of marine 2
-        :param b_tag: baneling tag
-        :return:
+        This function returns a list with ones and zero (like [1,0,1]) a one represents alive and a zero represents
+        the unit being dead. So in the example of the list [1,1,1] both marines and the baneling of a sqaure are alive.
+        In the list [1,0,0] only marine 1 is alive and both marine 2 and the baneling are dead.
+        :param m1_tag: int
+        :param m2_tag: int
+        :param b_tag: int
+        :return: list
         """
-        state_lst = [self.unit_is_alive(m1_tag), self.unit_is_alive(m2_tag), self.unit_is_alive(b_tag)]
-        return state_lst
+        return [self.unit_is_alive(m1_tag), self.unit_is_alive(m2_tag), self.unit_is_alive(b_tag)]
 
-    def unit_is_alive(self, unit_tag) -> 0|1:
+    def unit_is_alive(self, unit_tag):
         """
-        checks if a unit is alive
-        :param unit_tag:
-        :return:
+        This function checks if a given unit is alive. And returns 0 if the unit is dead and 1 if the unit is alive.
+        :param unit_tag: int
+        :return: int
         """
-        unit = self.state.units.find_by_tag(unit_tag)
-        # Check if the unit still exists
-        if unit is None:
+        if self.state.units.find_by_tag(unit_tag) is None:
             return 0
         else:
             return 1
@@ -228,17 +234,12 @@ class GameBot(sc2.BotAI):
                 if len(visible_banes) > 0:
                     # ========== Execute actions ========== #
                     self.agent_dict[tag].apply_baneling_sof(self.create_baneling_masks(visible_banes))
-                    if self.agent_dict[tag].atype == "attacker":
+                    if self.agent_dict[tag].chosen_action == "Attack":
                         await self.do(agent.attack(visible_banes[0]))
-                    elif self.agent_dict[tag].atype == "greedy":
-                        pass
-                    elif self.agent_dict[tag].atype == "rational":
-                        pass
                     else:
                         await self.do(agent.move(self.agent_dict[tag].get_best_point(score_mask, visible_banes)))
 
             self.give_scores()
-
         else:
             self.give_scores(True)
             self.update_action_matrix()
