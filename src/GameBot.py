@@ -1,12 +1,12 @@
-import json
+import sys
 import numpy as np
 import time
 import sc2
+import json
 from random import choice
 from sc2.constants import BANELING, MARINE
 from src.MarineAgent import MarineAgent
 from sc2.position import Point2
-
 
 
 
@@ -37,37 +37,44 @@ class GameBot(sc2.BotAI):
         type_combination = []
 
         for agent in self.units.of_type(MARINE):
-            if not len(type_combination): #fetch a new type combination if the current one is empty
-                # fetch a random marine type combination from all type combinations
-                combination = choice(type_combinations)
-                # remove the chosen combination from the list
-                type_combinations.pop(combination)
-
-                # fetch the type for the marine being selected and remove it from the selected combination
-                marine_type = type_combination[0]
-                type_combination.pop(0)
-            else:
-                marine_type = type_combination[0]
-                type_combination.pop(0)
-
-            self.agent_dict[str(agent.tag)] = MarineAgent(self.pathing_map, self.map_y_size, self.map_x_size,
-                                                          marine_type)
+            self.agent_dict[str(agent.tag)] = MarineAgent(self.pathing_map, self.map_y_size, self.map_x_size, agent.tag)
 
         self.define_square_trios()
+
+        for dict in self.square_info_dictionaries:
+            for i in range(1, 3):
+                if not len(type_combination): # fetch a new type combination if the current one is empty
+                    # fetch a random marine type combination from all type combinations
+                    type_combination = choice(type_combinations)
+                    # remove the chosen combination from the list
+                    type_combinations.pop(type_combinations.index(type_combination))
+
+                    # fetch the type for the marine being selected and remove it from the selected combination
+                    marine_type = type_combination[0]
+                    type_combination.pop(0)
+                    marine = dict[f"marine{i}"]
+                    marine.type = marine_type
+
+                else:
+                    marine_type = type_combination[0]
+                    type_combination.pop(0)
+                    marine = dict[f"marine{i}"]
+                    marine.type = marine_type
 
         return super().on_start()
 
     def update_actionmatrix(self) -> None:
-        """Update the global actionmatrix with all the scores of the marineAgents from this iteration.
+        """
+        Update the global actionmatrix with all the scores of the marineAgents from this iteration.
         """
 
         for agent in self.agent_dict.values():
-            m1_score = agent.performance_score 
+            m1_score = agent.performance_score
             m2_score = agent.partner_agent.performance_score
 
             m1_action = agent.chosen_action
             m2_action = agent.partner_agent.chosen_action
-            
+
             # Update the action matrix with the new scores
             old_payoffs = self.action_matrix["Scores"][m1_action][m2_action]
             n0, n1 = self.action_matrix["Counts"][m1_action][m2_action]  # number of counts so far
@@ -80,7 +87,7 @@ class GameBot(sc2.BotAI):
                 )
             else:
                 new_payoffs = (m1_score, m2_score)
-            
+
             # Replace the old values
             self.action_matrix["Scores"][m1_action][m2_action] = new_payoffs
             self.action_matrix["Counts"][m1_action][m2_action] = (n0+1, n1+1)
@@ -112,10 +119,16 @@ class GameBot(sc2.BotAI):
         # itereer over alle vijandposities
         for enemy in self.known_enemy_units:
             baneling_tag = enemy.tag
-            enemy_position = enemy.posistion
+            enemy_position = enemy.position
+
             # selecteer twee marines die het meest dichtbij de enemy vijand staan
-            marine1 = self.agent_dict[self.units.sorted_by_distance_to(Point2(enemy_position))[0].tag]
-            marine2 = self.agent_dict[self.units.sorted_by_distance_to(Point2(enemy_position))[1].tag]
+            marine1 = self.agent_dict[f"{self.units.sorted_by_distance_to(Point2(enemy_position))[0].tag}"]
+            marine2 = self.agent_dict[f"{self.units.sorted_by_distance_to(Point2(enemy_position))[1].tag}"]
+
+            # define partner agents so the matrix can be updated correctly
+            marine1.partner_agent = marine2
+            marine2.partner_agent = marine1
+
             # append the square info to the global value for easy access
             self.square_info_dictionaries.append({"marine1": marine1, "marine2": marine2, "baneling_tag": baneling_tag})
 
@@ -158,30 +171,33 @@ class GameBot(sc2.BotAI):
         state = self.check_square_state(m1.tag, m2.tag, btag)
 
         # Give points for being alive
-        if state.index(0):
+        if state[0]:
             m1.performance_score += 0.5
 
-        if state.index(1):
+        if state[1]:
             m2.performance_score += 0.5
 
         # check if its end of time
         if last_step:
+            print(state)
             # hand out points for living, dying(negative gain) and killing the baneling if the marine decided to attack
-            if state.index(0):
+            if state[0]:
                 m1.performance_score += 2
             else:
                 m1.performance_score -= 2
 
-            if state.index(1):
+            if state[1]:
                 m2.performance_score += 2
             else:
                 m2.performance_score -= 2
 
-            if not state.index(2) and m1.move == "attack":
-                m1.performance_score += 2
+            #TODO chosen action needs to be filled
 
-            if not state.index(2) and m2.move == "attack":
-                m2.performance_score += 2
+            # if not state[2] and m1.chosen_action == "Attack":
+            #     m1.performance_score += 2
+            #
+            # if not state[2] and m2.chosen_action == "Attack":
+            #     m2.performance_score += 2
 
         return m1, m2
 
@@ -204,14 +220,14 @@ class GameBot(sc2.BotAI):
         :param unit_tag:
         :return:
         """
-        unit = self.units.find_by_tag(unit_tag)
+        unit = self.state.units.find_by_tag(unit_tag)
 
         # Check if the unit still exists
-        if unit is None or not unit.is_alive:
+        if unit is None:
             return 0
         else:
             return 1
-        
+
     async def on_step(self, iteration):
         """
         This function executes the perception and actions of the agents inside the simulation (every step).
@@ -234,10 +250,14 @@ class GameBot(sc2.BotAI):
                 time.sleep(0.01)
                 await self.do(agent.move(self.agent_dict[tag].get_best_point(score_mask, visible_banes)))
 
-        for square_dict in self.square_info_dictionaries:
-            if self.time > 10:
+
+        if self.time > 20:
+            for square_dict in self.square_info_dictionaries:
                 self.give_scores(square_dict, True)
-                #TODO start a new game/epoch of marines and banelings
-            else:
-                self.give_scores()
+            self.update_actionmatrix()
+            #TODO start a new game/epoch of marines and banelings
+            sys.exit()
+        else:
+            for square_dict in self.square_info_dictionaries:
+                self.give_scores(square_dict)
 

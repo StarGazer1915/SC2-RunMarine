@@ -3,15 +3,16 @@ from sc2.position import Point2
 
 
 class MarineAgent:
-    def __init__(self, passability_map, map_y_size, map_x_size, atype):
+    def __init__(self, passability_map, map_y_size, map_x_size, tag):
         self.position = None
         self.vismap_stored = False
-        self.vismap_scores = np.zeros(shape=(map_x_size, map_y_size)).astype("float64")
+        self.vismap_scores = np.zeros(shape=(map_y_size, map_x_size)).astype("float64")
         self.valid_point_threshold = 0.8
         self.passability_map = passability_map
         self.map_y_size = map_y_size
         self.map_x_size = map_x_size
-        self.atype = atype
+        self.tag = tag
+        self.atype = str
         self.performance_score = 0
         self.partner_agent: MarineAgent
         self.chosen_action: str
@@ -81,18 +82,22 @@ class MarineAgent:
 
         self.vismap_scores = np.around(self.vismap_scores.copy(), 2)
 
-    def take_greedy_action_from_actionmatrix(self, action_matrix: np.ndarray):
-        # Look for the highest value only relevent for this agent and not its partner
+    def Take_action_from_actionmatrix(self, action_matrix: np.ndarray):
+        # Look for the highest value only relevant for this agent and not its partner
         # A greedy look at the matrix of sorts
-        highest_score = np.max(action_matrix[:,:,0])
-        hs_loc = np.unravel_index(np.argmax([action_matrix==highest_score]), action_matrix.shape)
+        if self.atype == "greedy":
+            highest_score = np.max(action_matrix[:,:,0])
+            hs_loc = np.unravel_index(np.argmax([action_matrix==highest_score]), action_matrix.shape)
 
-        if hs_loc[0] or hs_loc[1]:
-            # Higest score in fleeing field
-            self.chosen_action = "Flee"
-        else:
-            # Highest score in Attack field
-            self.chosen_action = "Attack"
+            if hs_loc[0] or hs_loc[1]:
+                # Higest score in fleeing field
+                self.chosen_action = "Flee"
+            else:
+                # Highest score in Attack field
+                self.chosen_action = "Attack"
+
+
+        # elif self.atype == "rational":
 
     def get_best_point(self, vision_mask, known_banes):
         """
