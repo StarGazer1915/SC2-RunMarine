@@ -1,20 +1,28 @@
 import json
+import time
+
 from sc2 import run_game, maps, Race, Difficulty
 from sc2.player import Bot, Computer
 from src.GameBot import GameBot
 
-try:
-    with open("action_matrix.json", "r") as f:
-        action_matrix = json.load(f)
-except:
-    with open("action_matrix_template.json", "r") as f:
-        action_matrix = json.load(f)
+for i in range(10):
+        try:
+            with open("action_matrix.json", "r") as f:
+                action_matrix = json.load(f)
+        except:
+            with open("action_matrix_template.json", "r") as f:
+                action_matrix = json.load(f)
 
-run_game(maps.get("12SquareMarinevsBaneling"),
-         [
-             Bot(Race.Terran, GameBot(action_matrix)),
-             Computer(Race.Zerg, Difficulty.Hard)
-         ], realtime=True)
+        try:
+            run_game(maps.get("12SquareMarinevsBaneling"),
+                     [
+                         Bot(Race.Terran, GameBot(action_matrix)),
+                         Computer(Race.Zerg, Difficulty.Hard)
+                     ], realtime=True)
+        except:
+            continue
+
+
 
 # ========== Maps ========== #
 # - marine_vs_baneling_advanced

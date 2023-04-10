@@ -243,6 +243,7 @@ class GameBot(sc2.BotAI):
         else:
             self.give_scores(True)
             self.update_action_matrix()
+            self.save_action_matrix_to_file()
 
             # print("\n\n")
             # for agent in self.agent_dict.values():
@@ -250,5 +251,4 @@ class GameBot(sc2.BotAI):
             #           f"Chosen Action: {agent.chosen_action} | Score = {agent.performance_score}")
             # print("\n")
 
-            # TODO start a new game/epoch of marines and banelings
-            sys.exit()
+            await self._client.leave()
