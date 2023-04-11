@@ -10,12 +10,13 @@ from src.MarineAgent import MarineAgent
 
 
 class GameBot(sc2.BotAI):
-    def __init__(self, action_matrix):
+    def __init__(self, action_matrix, epoch: int):
         self.square_info_dictionaries = []
         self.agent_dict = {}
         self.pathing_map = np.array([])
         self.map_y_size = 0.
         self.map_x_size = 0.
+        self.epoch = epoch
         self.action_matrix = action_matrix
         self.marine_type_combinations = [["runner", "rational"], ["rational", "runner"], ["attacker", "rational"],
                                          ["rational", "attacker"], ["rational", "greedy"], ["greedy", "rational"],
@@ -95,7 +96,7 @@ class GameBot(sc2.BotAI):
     def save_agent_data(self):
         with open("agent_data.csv", "a") as data_file:
             for agent in self.agent_dict.values():
-                data_file.write(f"{agent.tag};{agent.atype};{agent.chosen_action};{agent.performance_score}\n")
+                data_file.write(f"{agent.tag};{agent.atype};{agent.chosen_action};{agent.performance_score};{self.epoch}\n")
 
     def create_circular_mask(self, center=None, radius=None):
         """

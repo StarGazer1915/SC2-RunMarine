@@ -16,7 +16,7 @@ for i in range(10):
         try:
             run_game(maps.get("12SquareMarinevsBaneling"),
                      [
-                         Bot(Race.Terran, GameBot(action_matrix)),
+                         Bot(Race.Terran, GameBot(action_matrix, i)),
                          Computer(Race.Zerg, Difficulty.Hard)
                      ], realtime=True)
         except Exception as err:
