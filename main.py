@@ -4,21 +4,21 @@ from sc2.player import Bot, Computer
 from src.GameBot import GameBot
 
 for i in range(10):
-        try:
-            with open("action_matrix.json", "r") as f:
-                action_matrix = json.load(f)
-        except:
-            with open("action_matrix_template.json", "r") as f:
-                action_matrix = json.load(f)
+    try:
+        with open("action_matrix.json", "r") as f:
+            action_matrix = json.load(f)
+    except:
+        with open("action_matrix_template.json", "r") as f:
+            action_matrix = json.load(f)
 
-        try:
-            run_game(maps.get("12SquareMarinevsBaneling"),
-                     [
-                         Bot(Race.Terran, GameBot(action_matrix, i)),
-                         Computer(Race.Zerg, Difficulty.Hard)
-                     ], realtime=True)
-        except Exception as err:
-            print(f"Error while running game loop: {err}")
+    try:
+        run_game(maps.get("12SquareMarinevsBaneling"),
+                    [
+                        Bot(Race.Terran, GameBot(action_matrix, i)),
+                        Computer(Race.Zerg, Difficulty.Hard)
+                    ], realtime=True)
+    except Exception as err:
+        print(f"Error while running game loop: {err}")
 
 
 
