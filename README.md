@@ -4,7 +4,7 @@ Door:
 - Justin Klein (StarGazer1915)
 - Rutger Willard (unknownZandbak)
 - Youssef Boulfiham (Youssef-Boulfiham)
-
+# ADB-2 (Single-agent)
 ## Inrichting omgeving
 De simulatie vind plaats in het spel StarCraft II en wordt aangestuurd met behulp van een python API genaamd: `sc2`. We hebben voor deze API gekozen aangezien alle leden het beste met deze python variant overweg kunnen. Ook is veel documentatie en uitleg over de API beschikbaar via de link: https://pythonprogramming.net/commanding-army-starcraft-ii-ai-python-sc2-tutorial/. Hiernaast heeft starcraft 2 zijn eigen map builder en is/was het voor ons eenvoudig om meerdere omgevingen/situaties op te zetten voor onze simulaties. 
 
@@ -15,3 +15,33 @@ Als code architectuur is er uiteraard gekozen voor OOP, hiermee kunnen we het ge
 
 ## Gebruik
 Om de simulatie te starten kunt u het `main.py` bestand uitvoeren. Let op dat u hiervoor wel een aantal libraries/packages, waaronder `sc2`, geïnstalleerd moet hebben. Zie hiervoor de imports van de `main.py`, `GameBot.py` en `MarineAgent.py` bestanden. Ook moet u uiteraard StarCraft II gedownload hebben op uw computer/machine om de omgevingen te kunnen laden.
+
+# ABD-4 (Multi-agent)
+## Inrichting omgeving 
+Qua tools is alles hetzelfe gebleven en zijn we OOP gaan programmeren, vooral de opzet van de omgeving is erg aangepast zodat het experiment kon worden uitgevoerd. In de map `12SquareMarinevsBaneling` zijn er 12 pilaren met allemaal verschillende opzetten van 2 Marines en een Baneling ![map_layout](Readme_img/map_layout.png). Op iedere van deze twee pilaren wordt een situatie geforceerd waarbij 2 Marines de keuze moeten maken uit vluchten voor de baneling of juist de baneling aanvallen. Als beide Marines de baneling aanvallen zullen ze altijd de baneling doodkrijgen en als er maar 1 Marines aanvalt lukt het soms. In het geval dat de 2 Marines vluchten zal de baneling uiteraard niet worden vermoord. Ook verdienen agenten punten voor: de tijd zie ze hebben overleefd, het overleven tot het einde van de simulatie en voor het doden van de Baneling als ze ook hebben deelgenomen aan de aanval.
+
+## Opzet experiment 
+In onze simulatie zijn er vier typen Marines aanwezig, waarbij drie concepten uit de theorie worden toegepast op deze typen Marines. Er zijn twee Marines die een "pure strategy" hanteren, namelijk de "runner" (vlucht altijd) en de "attacker" (valt altijd aan). Daarnaast is er een Marine die altijd kiest voor "Pareto optimality" en dus altruïstisch is en een rationele Marine die altijd kiest voor de "Nash equilibrium" en aanmeemt dat de andere agent ook rationeel is. De altruïstische en rationele Marine baseren hun keuzes op de matrix in het bestand `action_matrix.json`, die constant wordt geüpdatet met de scores van iedere waarneming die is gedaan door een niet pure strategy agent. Voor dit experiment werd er gekeken naar welke theorie het best presteert binnen de beschreven simulatie. 
+
+## Uitvoering experiment 
+De omgeving is 20 keer gesimuleerd, waarbij de scores en gegevens uit de matrix in action_matrix.json steeds zijn doorgegeven aan de volgende simulatie. Ook worden de scores van iedere Marine bijgehouden en wegescherven. Iedere simualtie zijn de plaatsingen van iedere type agent en zo ook de gebruikte theorien willekeurig bepaald, zodat de resualten wat meer representatief zouden zijn van een simulatie die deze situaties van 1 Baneling en 2 Marines niet zou forceren. 
+
+## Resultaten 
+
+
+## Conclusie 
+
+
+## Discussie 
+### verloop 
+Over het algemeen verliep deze opdracht beter dan de vorige, maar we hadden nog steeds veel problemen met de communicatie. Zo zijn er bijvoorbeeld verschillende branches met de `main` samengevoegd zonder dat we daarover hadden overlegd, wat leidde tot twee uur tijdsverlies om alle bestanden te herstellen. Daarnaast waren er nog andere gevallen van slechte communicatie en was er ook veel ruimte voor verbetering bij de planning van deze opdracht.
+
+### Voor de volgende keer
+In het vervolg lijkt het ons slim om eerst een duidelijke rol en taakverdeling te maken en daarbij ook een duidelijke planning. Hiernaast zullen we ook duidelijke afpsraken maken over het handelen binnen het project zodat niemand zomaar afwijkt van het algemene plan. En er niet zomaar drastische acties worden ondernomen die uiteindelijk onbruikbaar of zelfs shadelijk voor de opdracht blijken te zijn. 
+
+# Bronnen 
+- http://www.masfoundations.org/<br>
+- https://www.youtube.com/watch?v=6rs_EQpxTI4<br>
+- https://www.youtube.com/watch?v=idHVAUEeaqE<br>
+- https://www.youtube.com/watch?v=9zYI7t-CxX4<br>
+- https://www.youtube.com/watch?v=XwhFq8WwTtA
