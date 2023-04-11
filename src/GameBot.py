@@ -9,13 +9,12 @@ from src.MarineAgent import MarineAgent
 
 
 class GameBot(sc2.BotAI):
-    def __init__(self, action_matrix, epoch: int):
+    def __init__(self, action_matrix):
         self.square_info_dictionaries = []
         self.agent_dict = {}
         self.pathing_map = np.array([])
         self.map_y_size = 0.
         self.map_x_size = 0.
-        self.epoch = epoch
         self.action_matrix = action_matrix
         self.marine_type_combinations = [["runner", "rational"], ["rational", "runner"], ["attacker", "rational"],
                                          ["rational", "attacker"], ["rational", "greedy"], ["greedy", "rational"],
