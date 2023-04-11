@@ -4,12 +4,9 @@ import time
 import json
 from random import choice
 import sc2
-import pandas as pd
-# from sc2.constants import BANELING, MARINE
-from sc2.ids.unit_typeid import UnitTypeId
+from sc2.constants import BANELING, MARINE
 from sc2.position import Point2
 from src.MarineAgent import MarineAgent
-from datetime import datetime
 
 
 class GameBot(sc2.BotAI):
@@ -25,7 +22,6 @@ class GameBot(sc2.BotAI):
                                          ["rational", "attacker"], ["rational", "greedy"], ["greedy", "rational"],
                                          ["rational", "rational"], ["runner", "greedy"], ["greedy", "runner"],
                                          ["attacker", "greedy"], ["greedy", "attacker"], ["greedy", "greedy"]]
-        self.history = pd.DataFrame()  # remember desired information
         super().__init__()
 
     def on_start(self):
@@ -39,7 +35,7 @@ class GameBot(sc2.BotAI):
         type_combinations = self.marine_type_combinations
 
         # Define all agents in the current environment
-        for agent in self.units.of_type(UnitTypeId.MARINE):  #MARINE):
+        for agent in self.units.of_type(MARINE):
             self.agent_dict[str(agent.tag)] = MarineAgent(self.pathing_map, self.map_y_size, self.map_x_size, agent.tag)
 
         # Define the combinations of agent 'personalities' / types and assign them
@@ -228,9 +224,8 @@ class GameBot(sc2.BotAI):
         :param iteration: iteration (sc2)
         """
         if self.time <= 12:
-            self.history_to_excel(next(iter(self.agent_dict.values())).vismap_scores)
             baneling_list = [unit for unit in self.known_enemy_units if unit.name == "Baneling"]
-            for agent in self.units.of_type(UnitTypeId.MARINE):  #MARINE):
+            for agent in self.units.of_type(MARINE):
                 # ========== Update agent variables ========== #
                 tag = str(agent.tag)
                 self.agent_dict[tag].position = agent.position
@@ -260,10 +255,3 @@ class GameBot(sc2.BotAI):
          
 
             await self._client.leave()
-
-    def history_to_excel(self, new):
-        """schrijf gewenste informatie over het spel per iteratie weg naar een excel bestand"""
-        # concateneer bestaande history met nieuwe historie
-        self.history = pd.concat([self.history, pd.DataFrame(new)], axis=0)
-        # sla op als excel bestand
-        self.history.to_excel(f"array_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx", index=False)
