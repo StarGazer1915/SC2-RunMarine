@@ -81,7 +81,8 @@ class GameBot(sc2.BotAI):
                 # Replace the old values
                 self.action_matrix["Scores"][m1_action][m2_action] = new_payoffs
                 self.action_matrix["Counts"][m1_action][m2_action] = (n0+1, n1+1)
-
+        # Raise the epoch of runs done
+        self.action_matrix["Epoch"] += 1
         self.save_action_matrix_to_file()
 
     def save_action_matrix_to_file(self, file="action_matrix.json"):
@@ -94,9 +95,10 @@ class GameBot(sc2.BotAI):
             json.dump(self.action_matrix, f)
 
     def save_agent_data(self):
+        epoch = self.action_matrix["Epoch"]
         with open("agent_data.csv", "a") as data_file:
             for agent in self.agent_dict.values():
-                data_file.write(f"{agent.tag};{agent.atype};{agent.chosen_action};{agent.performance_score};{self.epoch}\n")
+                data_file.write(f"{agent.tag};{agent.atype};{agent.chosen_action};{agent.performance_score};{epoch}\n")
 
     def create_circular_mask(self, center=None, radius=None):
         """
