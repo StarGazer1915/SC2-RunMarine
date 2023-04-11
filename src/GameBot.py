@@ -206,6 +206,7 @@ class GameBot(sc2.BotAI):
         :param b_tag: int
         :return: list
         """
+        # return list of booleans which identifies which object are not active annymore
         return [self.unit_is_alive(marine_tag), self.unit_is_alive(marine_partner_tag), self.unit_is_alive(b_tag)]
 
     def unit_is_alive(self, unit_tag):
@@ -214,44 +215,50 @@ class GameBot(sc2.BotAI):
         :param unit_tag: int
         :return: int
         """
+        # check if agent is still alive
         if self.state.units.find_by_tag(unit_tag) is None:
             return 0
-        else:
-            return 1
+        return 1
 
     async def on_step(self, iteration):
         """
         This function executes the perception and actions of the agents inside the simulation (every step).
         :param iteration: iteration (sc2)
         """
+        # as long as the possible epoch-duration is active
         if self.time <= 12:
-            self.history_to_excel(next(iter(self.agent_dict.values())).vismap_scores)
+            # get list of enemys within vision of agents
             baneling_list = [unit for unit in self.known_enemy_units if unit.name == "Baneling"]
-            for agent in self.units.of_type(UnitTypeId.MARINE):  # MARINE):
+            # iterate agents
+            for tag, agent in self.agent_dict.items():
                 # ========== Update agent variables ========== #
-                tag = str(agent.tag)
-                self.agent_dict[tag].position = agent.position
-
+                agent.position = self.units.find_by_tag(tag).position
                 # ========== Start behaviour process ========== #
                 score_mask = np.flip(self.create_circular_mask(agent.position, agent.sight_range), 0)
-                self.agent_dict[tag].percept_environment(score_mask)
-                visible_banes = [b for b in baneling_list if \
-                                 score_mask[(-b.position.rounded[1] + self.map_y_size)][b.position.rounded[0]]]
-
+                agent.percept_environment(score_mask)
+                visible_baneling = [baneling for baneling in baneling_list if \
+                                 score_mask[(-baneling.position.rounded[1] + self.map_y_size)][baneling.position.rounded[0]]]
                 time.sleep(0.01)  # Delay to save performance
-                if len(visible_banes) > 0:
+                # if enemys are visible
+                if len(visible_baneling) > 0:
                     # ========== Execute actions ========== #
-                    self.agent_dict[tag].apply_baneling_sof(self.create_baneling_masks(visible_banes))
-                    if self.agent_dict[tag].chosen_action == "Attack":
-                        await self.do(agent.attack(visible_banes[0]))
+                    agent.apply_baneling_sof(self.create_baneling_masks(visible_baneling))
+                    # check is agent would attack
+                    if agent.chosen_action == "Attack":
+                        # attack enemy
+                        await self.do(agent.attack(visible_baneling[0]))
                     else:
-                        await self.do(agent.move(self.agent_dict[tag].get_best_point(score_mask, visible_banes)))
-
+                        # go towards best position within vision
+                        await self.do(agent.move(agent.get_best_point(score_mask, visible_baneling)))
+            # assign scores based on the outcome of epoch
             self.give_scores()
         else:
+            # assign scores based on the outcome of epoch
             self.give_scores(True)
+            # update matrix
             self.update_action_matrix()
             self.save_agent_data()
+            # save localy
             self.save_action_matrix_to_file()
 
             await self._client.leave()
