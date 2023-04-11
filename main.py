@@ -18,7 +18,7 @@ for i in range(10):
                          Computer(Race.Zerg, Difficulty.Hard)
                      ], realtime=True)
         except Exception as err:
-            print(f"Error when runnign game: {err}")
+            print(f"Error when running game: {err}")
 
 
 
