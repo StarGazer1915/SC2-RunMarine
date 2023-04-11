@@ -69,31 +69,31 @@ class GameBot(sc2.BotAI):
         Update the global action_matrix with all the scores of the marineAgents from this iteration.
         :return: void
         """
+        # iterate aggents
         for agent in self.agent_dict.values():
+            # if agent is rational
             if agent.atype == "rational":
-                m1_score = agent.performance_score
-                m2_score = self.agent_dict[str(agent.partner_agent_tag)].performance_score
-
-                m1_action = agent.chosen_action
-                m2_action = self.agent_dict[str(agent.partner_agent_tag)].chosen_action
-
+                # get performance score
+                marine_score = agent.performance_score
+                marine_partner_score = self.agent_dict[str(agent.partner_agent_tag)].performance_score
+                # get next action
+                marine_action = agent.chosen_action
+                marine_partner_action = self.agent_dict[str(agent.partner_agent_tag)].chosen_action
                 # Update the action matrix with the new scores
-                old_payoffs = self.action_matrix["Scores"][m1_action][m2_action]
-                n0, n1 = self.action_matrix["Counts"][m1_action][m2_action]  # number of counts so far
-
+                old_payoffs = self.action_matrix["Scores"][marine_action][marine_partner_action]
+                n0, n1 = self.action_matrix["Counts"][marine_action][marine_partner_action]  # number of counts so far
                 # Calculate running average
                 if n0 != 0 and n1 != 0:
                     new_payoffs = (
-                        (old_payoffs[0] * n0 + m1_score) / (n0 + 1),
-                        (old_payoffs[1] * n1 + m2_score) / (n1 + 1)
+                        (old_payoffs[0] * n0 + marine_score) / (n0 + 1),
+                        (old_payoffs[1] * n1 + marine_partner_score) / (n1 + 1)
                     )
                 else:
-                    new_payoffs = (m1_score, m2_score)
-
+                    new_payoffs = (marine_score, marine_partner_score)
                 # Replace the old values
-                self.action_matrix["Scores"][m1_action][m2_action] = new_payoffs
-                self.action_matrix["Counts"][m1_action][m2_action] = (n0 + 1, n1 + 1)
-
+                self.action_matrix["Scores"][marine_action][marine_partner_action] = new_payoffs
+                self.action_matrix["Counts"][marine_action][marine_partner_action] = (n0 + 1, n1 + 1)
+        # save newly updated action matrix
         self.save_action_matrix_to_file()
 
     def save_action_matrix_to_file(self, file="action_matrix.json"):
@@ -139,17 +139,17 @@ class GameBot(sc2.BotAI):
         for enemy in self.known_enemy_units:
             baneling_tag = enemy.tag
             enemy_position = enemy.position
-            m1_tag = self.units.sorted_by_distance_to(Point2(enemy_position))[0].tag
-            m2_tag = self.units.sorted_by_distance_to(Point2(enemy_position))[1].tag
+            marine_tag = self.units.sorted_by_distance_to(Point2(enemy_position))[0].tag
+            marine_partner_tag = self.units.sorted_by_distance_to(Point2(enemy_position))[1].tag
 
             # define partner agents so the matrix can be updated correctly
-            self.agent_dict[str(m1_tag)].partner_agent_tag = m2_tag
-            self.agent_dict[str(m2_tag)].partner_agent_tag = m1_tag
+            self.agent_dict[str(marine_tag)].partner_agent_tag = marine_partner_tag
+            self.agent_dict[str(marine_partner_tag)].partner_agent_tag = marine_tag
 
             # append the square info to the global value for easy access
             self.square_info_dictionaries.append({
-                "marine1": m1_tag,
-                "marine2": m2_tag,
+                "marine1": marine_tag,
+                "marine2": marine_partner_tag,
                 "baneling_tag": baneling_tag})
 
     def create_baneling_masks(self, known_banelings):
@@ -178,46 +178,35 @@ class GameBot(sc2.BotAI):
         :return: void
         """
         for square_info in self.square_info_dictionaries:
-            m1_tag = square_info["marine1"]
-            m2_tag = square_info["marine2"]
+            marine_tag = square_info["marine1"]
+            marine_partner_tag = square_info["marine2"]
             banetag = square_info["baneling_tag"]
-            state = self.check_square_state(m1_tag, m2_tag, banetag)
-
+            state = self.check_square_state(marine_tag, marine_partner_tag, banetag)
+            marine_agent = self.agent_dict[f"{marine_tag}"]
+            partner_agent = self.agent_dict[f"{marine_partner_tag}"]
             # Give points for being alive
-            if state[0]:
-                self.agent_dict[f"{m1_tag}"].performance_score += 0.5
-
-            if state[1]:
-                self.agent_dict[f"{m2_tag}"].performance_score += 0.5
-
+            if state[0]: marine_agent.performance_score += 0.5
+            if state[1]: partner_agent.performance_score += 0.5
             if last_step:
                 # Hand out points for living (+), dying (-) and killing the baneling (++)
-                if state[0]:
-                    self.agent_dict[f"{m1_tag}"].performance_score += 2
-                else:
-                    self.agent_dict[f"{m1_tag}"].performance_score -= 2
+                marine_agent.performance_score += 2 if state[0] else -2
+                partner_agent.performance_score += 2 if state[1] else -2
+            if not state[2] and marine_agent.chosen_action == "Attack" \
+                    and partner_agent.chosen_action == "Attack":
+                marine_agent.performance_score += 4
+                partner_agent.performance_score += 4
 
-                if state[1]:
-                    self.agent_dict[f"{m2_tag}"].performance_score += 2
-                else:
-                    self.agent_dict[f"{m2_tag}"].performance_score -= 2
-
-                if not state[2] and self.agent_dict[f"{m1_tag}"].chosen_action == "Attack" \
-                        and self.agent_dict[f"{m2_tag}"].chosen_action == "Attack":
-                    self.agent_dict[f"{m1_tag}"].performance_score += 4
-                    self.agent_dict[f"{m2_tag}"].performance_score += 4
-
-    def check_square_state(self, m1_tag, m2_tag, b_tag):
+    def check_square_state(self, marine_tag, marine_partner_tag, b_tag):
         """
         This function returns a list with ones and zero (like [1,0,1]) a one represents alive and a zero represents
         the unit being dead. So in the example of the list [1,1,1] both marines and the baneling of a sqaure are alive.
         In the list [1,0,0] only marine 1 is alive and both marine 2 and the baneling are dead.
-        :param m1_tag: int
-        :param m2_tag: int
+        :param marine_tag: int
+        :param marine_partner_tag: int
         :param b_tag: int
         :return: list
         """
-        return [self.unit_is_alive(m1_tag), self.unit_is_alive(m2_tag), self.unit_is_alive(b_tag)]
+        return [self.unit_is_alive(marine_tag), self.unit_is_alive(marine_partner_tag), self.unit_is_alive(b_tag)]
 
     def unit_is_alive(self, unit_tag):
         """
