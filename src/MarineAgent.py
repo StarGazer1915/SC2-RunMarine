@@ -3,14 +3,19 @@ from sc2.position import Point2
 
 
 class MarineAgent:
-    def __init__(self, passability_map, map_y_size, map_x_size):
+    def __init__(self, passability_map, map_y_size, map_x_size, tag):
         self.position = None
         self.vismap_stored = False
-        self.vismap_scores = np.zeros(shape=(map_x_size, map_y_size)).astype("float64")
+        self.vismap_scores = np.zeros(shape=(map_y_size, map_x_size)).astype("float64")
         self.valid_point_threshold = 0.8
         self.passability_map = passability_map
         self.map_y_size = map_y_size
         self.map_x_size = map_x_size
+        self.tag = tag
+        self.atype = ""
+        self.performance_score = 0
+        self.partner_agent_tag = 0
+        self.chosen_action = ""
 
     def pad_with(self, array, pad_width, iaxis, kwargs):
         """
@@ -37,11 +42,11 @@ class MarineAgent:
 
     def percept_environment(self, vision_mask):
         """
-        This function generates scores in the current vision. These scores are based on how passable the
+        This function generates scores in the current vision_mask. These scores are based on how passable the
         points are and what their area contains (if the area contains a lot of passable points). The scores are
         then calculated and stored in the agent's memory (self.vismap_scores).
-        :param updated_map:
-        :param vision_mask:
+        :param vision_mask: numpy array / list
+        :return: void
         """
         new_map = self.vismap_scores.copy()
         new_map[vision_mask == True] = 2.0
@@ -62,11 +67,10 @@ class MarineAgent:
 
     def apply_baneling_sof(self, baneling_masks):
         """
-        This function applies modifiers on the scoremap in the masks given by the baneling_masks.
+        This function applies modifiers on the score map in the masks given by the baneling_masks.
         These modifiers indicate to the agent how dangerous areas around the baneling are. These can be
         seen as multiple circular layers and their impact becomes increasingly negative the closer the agent
         moves towards the baneling. This way the fear of getting close to the baneling is simulated.
-        :param marine_mask: numpy array
         :param baneling_masks: list of numpy arrays
         :return: void
         """
@@ -77,14 +81,76 @@ class MarineAgent:
 
         self.vismap_scores = np.around(self.vismap_scores.copy(), 2)
 
+    def define_matrix_scores(self, adict):
+        """
+        This function seperates the choices and scores from the dictionary into a comprehensible and iterable
+        multidimensional list.
+        :param adict: nested dict
+        :return: multidimensional list
+        """
+        choices = []
+        scores = []
+        for cat in adict["Scores"]:
+            for subcat in adict["Scores"][cat]:
+                choices.append([f"{cat}", f"{subcat}"])
+                scores.append(adict["Scores"][cat][subcat])
+
+        return [choices, scores]
+
+    def find_rational_best_choice(self, adict):
+        """
+        This function chooses the most rational choice for the rational agents, in this case being the combination
+        that yields both parties the biggest possible result.
+        :param adict: nested dict
+        :return: string
+        """
+        pairs = self.define_matrix_scores(adict)
+        highest_score = max(pairs[1])  # Get largest scoring pair
+        best_combo = pairs[0][pairs[1].index(highest_score)]  # See what combination results those scores
+        return best_combo[0]  # Return own choice for that combination of choices
+
+    def find_greediest_choice(self, adict):
+        """
+        This function chooses the most greedy choice for the greedy agents. In this function we
+        only look at the agent's own choices and what gives it the highest score.
+        :param adict: nested dict
+        :return: string
+        """
+        pairs = self.define_matrix_scores(adict)
+
+        choices_flat = list(np.array(pairs[0]).flatten())  # Flatten to get all own possible choices (selfish choice)
+        choices = [choices_flat[i] for i in range(0, len(choices_flat), 2)]  # Get only own choices
+
+        scores_flat = list(np.array(pairs[1]).flatten())  # Same for scores
+        scores = [scores_flat[i] for i in range(0, len(choices_flat), 2)]
+
+        highest_score = max(scores)
+        best_choice = choices[scores.index(highest_score)]
+        return best_choice  # Return the best possible choice for the agent
+
+    def take_action_from_action_matrix(self, action_matrix):
+        """
+        Choose an action behavior based on the agent's atype.
+        :param action_matrix: nested dict
+        """
+        if self.atype == "greedy":
+            self.chosen_action = self.find_greediest_choice(action_matrix)
+        elif self.atype == "rational":
+            self.chosen_action = self.find_rational_best_choice(action_matrix)
+        elif self.atype == "attacker":
+            self.chosen_action = "Attack"
+        else:
+            self.chosen_action = "Flee"
+
     def get_best_point(self, vision_mask, known_banes):
         """
         This function looks at all the points inside the current vision of the agent and calculates the
-        highest scoring point that is also the farthest away from the baneling. It then returns the point
-        so that in this case the SC2bot can execute a move order.
+        highest scoring point that is also the farthest away from the baneling. The choice is based
+        on the viability/passability of the point, and it's surrounding area. It then returns the point
+        so that in this case the SC2 bot can execute a move order to that point.
         :param vision_mask: numpy array
         :param known_banes: list of sc2 unit objects
-        :return: sc2 move command
+        :return: sc2 Point2
         """
         highest_point_in_vision = 0.0
         highest_scoring_point = (0.0, 0.0)
