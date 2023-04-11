@@ -229,7 +229,6 @@ class GameBot(sc2.BotAI):
         # as long as the possible epoch-duration is active
         if self.time <= 12:
             # save vismap_scores to history file
-            self.history_to_excel(next(iter(self.agent_dict.values())).vismap_scores)
             # get list of enemys within vision of agents
             baneling_list = [unit for unit in self.known_enemy_units if unit.name == "Baneling"]
             # iterate agents
