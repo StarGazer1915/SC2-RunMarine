@@ -1,4 +1,3 @@
-import sys
 import numpy as np
 import time
 import json
@@ -67,7 +66,7 @@ class GameBot(sc2.BotAI):
 
                 # Update the action matrix with the new scores
                 old_payoffs = self.action_matrix["Scores"][m1_action][m2_action]
-                n0, n1 = self.action_matrix["Counts"][m1_action][m2_action]  # number of counts so far
+                n0, n1 = self.action_matrix["Counts"][m1_action][m2_action]
 
                 # Calculate running average
                 if n0 != 0 and n1 != 0:
@@ -108,9 +107,9 @@ class GameBot(sc2.BotAI):
         :param radius: int/float
         :return: numpy array (booleans)
         """
-        if center is None:  # use the middle
+        if center is None:  # Use the middle
             center = (int(self.map_x_size / 2), int(self.map_y_size / 2))
-        if radius is None:  # use the smallest distance between the center and map edges
+        if radius is None:  # Use the smallest distance between the center and map edges
             radius = min(center[0], center[1], self.map_x_size - center[0], self.map_y_size - center[1])
 
         Y, X = np.ogrid[:self.map_y_size, :self.map_x_size]
@@ -129,11 +128,11 @@ class GameBot(sc2.BotAI):
             m1_tag = self.units.sorted_by_distance_to(Point2(enemy_position))[0].tag
             m2_tag = self.units.sorted_by_distance_to(Point2(enemy_position))[1].tag
 
-            # define partner agents so the matrix can be updated correctly
+            # Define partner agents so the matrix can be updated correctly
             self.agent_dict[str(m1_tag)].partner_agent_tag = m2_tag
             self.agent_dict[str(m2_tag)].partner_agent_tag = m1_tag
 
-            # append the square info to the global value for easy access
+            # Append the square info to the global value for easy access
             self.square_info_dictionaries.append({
                 "marine1": m1_tag,
                 "marine2": m2_tag,
@@ -251,7 +250,5 @@ class GameBot(sc2.BotAI):
             self.update_action_matrix()
             self.save_agent_data()
             self.save_action_matrix_to_file()
-
-         
 
             await self._client.leave()
