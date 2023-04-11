@@ -17,7 +17,7 @@ class MarineAgent:
         self.atype = ""
         # total amount of scores gained
         self.performance_score = 0
-        # total amount op pints gained by parter
+        # refferencenumber for partner-agent
         self.partner_agent_tag = 0
         # next action to take
         self.chosen_action = ""

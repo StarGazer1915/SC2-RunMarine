@@ -4,9 +4,9 @@ import json
 from random import choice
 import sc2
 import pandas as pd
-# from sc2.constants import BANELING, MARINE
+from sc2.constants import BANELING, MARINE
 from matplotlib import pyplot as plt
-from sc2.ids.unit_typeid import UnitTypeId
+# from sc2.ids.unit_typeid import UnitTypeId
 from sc2.position import Point2
 from datetime import datetime
 
@@ -42,9 +42,9 @@ class GameBot(sc2.BotAI):
         type_combinations = self.marine_type_combinations
 
         # iterate all avvailble marine agents
-        for tag in self.units:
+        for unit in self.units:
             # Define all agents in the current environment
-            self.agent_dict[str(tag)] = MarineAgent(self.pathing_map, self.map_y_size, self.map_x_size, tag)
+            self.agent_dict[str(unit.tag)] = MarineAgent(self.pathing_map, self.map_y_size, self.map_x_size, unit.tag)
 
         # Define the combinations of agent 'personalities' / types and assign them
         self.define_square_trios()
@@ -228,30 +228,34 @@ class GameBot(sc2.BotAI):
         """
         # as long as the possible epoch-duration is active
         if self.time <= 12:
+            # save vismap_scores to history file
+            self.history_to_excel(next(iter(self.agent_dict.values())).vismap_scores)
             # get list of enemys within vision of agents
             baneling_list = [unit for unit in self.known_enemy_units if unit.name == "Baneling"]
             # iterate agents
-            for tag, agent in self.agent_dict.items():
+            for agent in self.units.of_type(MARINE):  #  UnitTypeId.MARINE):
                 # ========== Update agent variables ========== #
-                agent.position = self.units.find_by_tag(tag).position
+                tag = str(agent.tag)
+                self.agent_dict[tag].position = agent.position
+
                 # ========== Start behaviour process ========== #
                 score_mask = np.flip(self.create_circular_mask(agent.position, agent.sight_range), 0)
-                agent.percept_environment(score_mask)
-                visible_baneling = [baneling for baneling in baneling_list if \
-                                    score_mask[(-baneling.position.rounded[1] + self.map_y_size)][
-                                        baneling.position.rounded[0]]]
+                self.agent_dict[tag].percept_environment(score_mask)
+                visible_banes = [b for b in baneling_list if \
+                                 score_mask[(-b.position.rounded[1] + self.map_y_size)][b.position.rounded[0]]]
                 time.sleep(0.01)  # Delay to save performance
                 # if enemys are visible
-                if len(visible_baneling) > 0:
+                if len(visible_banes) > 0:
                     # ========== Execute actions ========== #
-                    agent.apply_baneling_sof(self.create_baneling_masks(visible_baneling))
+                    self.agent_dict[tag].apply_baneling_sof(self.create_baneling_masks(visible_banes))
                     # check is agent would attack
-                    if agent.chosen_action == "Attack":
+                    if self.agent_dict[tag].chosen_action == "Attack":
                         # attack enemy
-                        await self.do(agent.attack(visible_baneling[0]))
+                        await self.do(agent.attack(visible_banes[0]))
                     else:
                         # go towards best position within vision
-                        await self.do(agent.move(agent.get_best_point(score_mask, visible_baneling)))
+                        await self.do(agent.move(self.agent_dict[tag].get_best_point(score_mask, visible_banes)))
+
             # assign scores based on the outcome of epoch
             self.give_scores()
         else:
@@ -262,7 +266,6 @@ class GameBot(sc2.BotAI):
             self.save_agent_data()
             # save localy
             self.save_action_matrix_to_file()
-
             await self._client.leave()
 
     def history_to_excel(self, new):
