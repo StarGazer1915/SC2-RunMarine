@@ -7,7 +7,7 @@ from src.GameBot import GameBot
 
 if __name__ == '__main__':
     # epochs/generations
-    for i in range(10):
+    for i in range(2):
         # check if action_matrix already exist
         try:
             with open("action_matrix.json", "r") as f:

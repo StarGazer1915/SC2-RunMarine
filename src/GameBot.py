@@ -1,4 +1,3 @@
-import sys
 import numpy as np
 import time
 import json
@@ -8,19 +7,23 @@ import pandas as pd
 # from sc2.constants import BANELING, MARINE
 from sc2.ids.unit_typeid import UnitTypeId
 from sc2.position import Point2
-from src.MarineAgent import MarineAgent
 from datetime import datetime
+
+from src.MarineAgent import MarineAgent
 
 
 class GameBot(sc2.BotAI):
     def __init__(self, action_matrix, epoch: int):
         self.square_info_dictionaries = []
+        # agent-class-object; key=refferencenumber towards sc.units.unit, value= agent-class-object MarineAgent()
         self.agent_dict = {}
         self.pathing_map = np.array([])
-        self.map_y_size = 0.
-        self.map_x_size = 0.
+        # y and x coordinates for vision of agent.
+        # note that the order in sc2 differce
+        self.map_y_size, self.map_x_size = 0., 0.
         self.epoch = epoch
         self.action_matrix = action_matrix
+        # possible acction combinations of agent and partner_agent
         self.marine_type_combinations = [["runner", "rational"], ["rational", "runner"], ["attacker", "rational"],
                                          ["rational", "attacker"], ["rational", "greedy"], ["greedy", "rational"],
                                          ["rational", "rational"], ["runner", "greedy"], ["greedy", "runner"],
@@ -34,24 +37,29 @@ class GameBot(sc2.BotAI):
         :return: void
         """
         self.pathing_map = self.game_info.pathing_grid.data_numpy.astype("float64")
-        self.map_y_size = len(self.pathing_map)
-        self.map_x_size = len(self.pathing_map[0])
+        self.map_y_size, self.map_x_size = self.pathing_map.shape
         type_combinations = self.marine_type_combinations
 
-        # Define all agents in the current environment
-        for agent in self.units.of_type(UnitTypeId.MARINE):  #MARINE):
-            self.agent_dict[str(agent.tag)] = MarineAgent(self.pathing_map, self.map_y_size, self.map_x_size, agent.tag)
+        # iterate all avvailble marine agents
+        for tag in self.units:
+            # Define all agents in the current environment
+            self.agent_dict[str(tag)] = MarineAgent(self.pathing_map, self.map_y_size, self.map_x_size, tag)
 
         # Define the combinations of agent 'personalities' / types and assign them
         self.define_square_trios()
+        # iterate possible actions
         for d in self.square_info_dictionaries:
+            # pick action
             type_combination = choice(type_combinations)
+            # define action in agent-class
             self.agent_dict[str(d[f"marine1"])].atype = type_combination[0]
             self.agent_dict[str(d[f"marine2"])].atype = type_combination[1]
+            # drop used combination
             type_combinations.pop(type_combinations.index(type_combination))
 
-        # Define what actions the agents are going to take based on their 'personality' / type
+        # iterate tags of all known actions/
         for tag in self.agent_dict:
+            # Define what actions the agents are going to take based on their 'personality' / type
             self.agent_dict[tag].take_action_from_action_matrix(self.action_matrix)
 
         return super().on_start()
@@ -84,7 +92,7 @@ class GameBot(sc2.BotAI):
 
                 # Replace the old values
                 self.action_matrix["Scores"][m1_action][m2_action] = new_payoffs
-                self.action_matrix["Counts"][m1_action][m2_action] = (n0+1, n1+1)
+                self.action_matrix["Counts"][m1_action][m2_action] = (n0 + 1, n1 + 1)
 
         self.save_action_matrix_to_file()
 
@@ -100,7 +108,8 @@ class GameBot(sc2.BotAI):
     def save_agent_data(self):
         with open("agent_data.csv", "a") as data_file:
             for agent in self.agent_dict.values():
-                data_file.write(f"{agent.tag};{agent.atype};{agent.chosen_action};{agent.performance_score};{self.epoch}\n")
+                data_file.write(
+                    f"{agent.tag};{agent.atype};{agent.chosen_action};{agent.performance_score};{self.epoch}\n")
 
     def create_circular_mask(self, center=None, radius=None):
         """
@@ -162,7 +171,7 @@ class GameBot(sc2.BotAI):
 
         return mask_list
 
-    def give_scores(self, last_step = False):
+    def give_scores(self, last_step=False):
         """
         This function updates the scores of agents based on their performance.
         :param last_step: boolean
@@ -198,7 +207,6 @@ class GameBot(sc2.BotAI):
                     self.agent_dict[f"{m1_tag}"].performance_score += 4
                     self.agent_dict[f"{m2_tag}"].performance_score += 4
 
-
     def check_square_state(self, m1_tag, m2_tag, b_tag):
         """
         This function returns a list with ones and zero (like [1,0,1]) a one represents alive and a zero represents
@@ -230,7 +238,7 @@ class GameBot(sc2.BotAI):
         if self.time <= 12:
             self.history_to_excel(next(iter(self.agent_dict.values())).vismap_scores)
             baneling_list = [unit for unit in self.known_enemy_units if unit.name == "Baneling"]
-            for agent in self.units.of_type(UnitTypeId.MARINE):  #MARINE):
+            for agent in self.units.of_type(UnitTypeId.MARINE):  # MARINE):
                 # ========== Update agent variables ========== #
                 tag = str(agent.tag)
                 self.agent_dict[tag].position = agent.position
@@ -256,8 +264,6 @@ class GameBot(sc2.BotAI):
             self.update_action_matrix()
             self.save_agent_data()
             self.save_action_matrix_to_file()
-
-         
 
             await self._client.leave()
 
