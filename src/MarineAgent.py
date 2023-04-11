@@ -4,17 +4,22 @@ from sc2.position import Point2
 
 class MarineAgent:
     def __init__(self, passability_map, map_y_size, map_x_size, tag):
+        # refferencenumber for sc2.units.unit
+        self.tag = tag
+        # current position
         self.position = None
         self.vismap_stored = False
         self.vismap_scores = np.zeros(shape=(map_y_size, map_x_size)).astype("float64")
         self.valid_point_threshold = 0.8
         self.passability_map = passability_map
-        self.map_y_size = map_y_size
-        self.map_x_size = map_x_size
-        self.tag = tag
+        # shape of the map
+        self.map_y_size, self.map_x_size = map_y_size, map_x_size
         self.atype = ""
+        # total amount of scores gained
         self.performance_score = 0
+        # total amount op pints gained by parter
         self.partner_agent_tag = 0
+        # next action to take
         self.chosen_action = ""
 
     def pad_with(self, array, pad_width, iaxis, kwargs):
@@ -124,6 +129,7 @@ class MarineAgent:
         scores_flat = list(np.array(pairs[1]).flatten())  # Same for scores
         scores = [scores_flat[i] for i in range(0, len(choices_flat), 2)]
 
+        # get highest score
         highest_score = max(scores)
         best_choice = choices[scores.index(highest_score)]
         return best_choice  # Return the best possible choice for the agent
