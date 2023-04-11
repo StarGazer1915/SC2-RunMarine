@@ -5,6 +5,7 @@ from random import choice
 import sc2
 import pandas as pd
 # from sc2.constants import BANELING, MARINE
+from matplotlib import pyplot as plt
 from sc2.ids.unit_typeid import UnitTypeId
 from sc2.position import Point2
 from datetime import datetime
@@ -237,7 +238,8 @@ class GameBot(sc2.BotAI):
                 score_mask = np.flip(self.create_circular_mask(agent.position, agent.sight_range), 0)
                 agent.percept_environment(score_mask)
                 visible_baneling = [baneling for baneling in baneling_list if \
-                                 score_mask[(-baneling.position.rounded[1] + self.map_y_size)][baneling.position.rounded[0]]]
+                                    score_mask[(-baneling.position.rounded[1] + self.map_y_size)][
+                                        baneling.position.rounded[0]]]
                 time.sleep(0.01)  # Delay to save performance
                 # if enemys are visible
                 if len(visible_baneling) > 0:
@@ -269,3 +271,53 @@ class GameBot(sc2.BotAI):
         self.history = pd.concat([self.history, pd.DataFrame(new)], axis=0)
         # sla op als excel bestand
         self.history.to_excel(f"array_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx", index=False)
+
+    def get_coordinates_middlepoint(self):
+        """
+        bereken middenpunt van iedere killbox.
+        lijst van tuples bestaande uit de coordinaten welk de middenpunten representeren.
+        """
+        boxes = 4
+        y, x = self.map_y_size, self.map_x_size
+        coordinates = []
+        for i in range(int(y // (boxes * 2)), y, int(y // boxes)):
+            coordinates.append((i, int(x // 2)))
+        return coordinates
+
+    def plot_centerpoints(self):
+        """
+        visualiseer middenpunten om te controleren of de agents juist kunnen worden gegroepeerd.
+        """
+        boxes = 4
+        y = self.map_y_size
+        x = self.map_x_size
+        coordinates = self.get_coordinates_middlepoint()
+        # Create a new figure and axis
+        fig, ax = plt.subplots()
+        # Set the aspect ratio to equal
+        ax.set_aspect('equal')
+        # Set the limits of the axis
+        ax.set_ylim(0, y)
+        ax.set_xlim(0, x)
+        step = int(y / boxes)
+        y_ticks = [i for i in range(0, y, step)] + [y]
+        x_ticks = [i for i in range(0, x, int(step // 2))] + [x]
+        ax.set_yticks(y_ticks)
+        ax.set_xticks(x_ticks)
+        y_scatter = [i[0] for i in coordinates]
+        x_scatter = [i[1] for i in coordinates]
+        plt.scatter(x_scatter, y_scatter, s=5, c='r', label='middenpunt')
+        for i in range(1, boxes):
+            if i == 1:
+                plt.axhline(y=i * step, linestyle='-', color='black', label='scheidingswand')
+            else:
+                plt.axhline(y=i * step, linestyle='-', color='black')
+        # Set the axis labels and title
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        ax.set_title('middenpunt van agents', pad=20)
+        ax.legend(loc='upper right', bbox_to_anchor=(3, 1))
+        fig1 = plt.gcf()
+        # plt.show()
+        plt.draw()
+        fig1.savefig('coordinates_middlepoint.png', dpi=720)
