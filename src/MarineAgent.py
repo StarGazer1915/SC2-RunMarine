@@ -141,7 +141,7 @@ class MarineAgent:
         # Checking for nash equilibrium
         if m1_best_combo_m2a == m2_best_combo_m1a or m1_best_combo_m2a == m2_best_combo_m1f:
             if m1_best_combo_m2f == m2_best_combo_m1a or m1_best_combo_m2a == m2_best_combo_m1f:
-                self.chosen_action = m1_best_choice_m2a if scores[m1_best_combo_m2a].sum() > scores[m1_best_choice_m2f].sum() else m1_best_choice_m2f
+                self.chosen_action = m1_best_choice_m2a if scores[m1_best_combo_m2a].sum() > scores[m1_best_combo_m2f].sum() else m1_best_choice_m2f
             else:
                 self.chosen_action = m1_best_choice_m2a
         elif m1_best_combo_m2f == m2_best_combo_m1a or m1_best_combo_m2a == m2_best_combo_m1f:
@@ -154,7 +154,7 @@ class MarineAgent:
                 self.chosen_action = m1_best_choice_m2a if m2_best_choice_m1a == "Attack" else m1_best_choice_m2f
             elif m1_best_choice_m2a == "Flee":
                 self.chosen_action = m1_best_choice_m2a if m2_best_choice_m1f == "Attack" else m1_best_choice_m2f
-                
+
         elif m2_best_choice_m1a == m2_best_choice_m1f:
             if m2_best_choice_m1a == "Attack":
                 self.chosen_action = m1_best_choice_m2a
