@@ -167,7 +167,7 @@ class MarineAgent:
         :param action_matrix: nested dict
         """
         if self.atype == "rational":
-            self.chosen_action = self.find_rational_choice(action_matrix)
+            self.find_rational_choice(action_matrix)
         elif self.atype == "altruistic":
             self.chosen_action = self.find_altruistic_best_choice(action_matrix)
         elif self.atype == "attacker":

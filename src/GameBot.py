@@ -16,10 +16,10 @@ class GameBot(sc2.BotAI):
         self.map_y_size = 0.
         self.map_x_size = 0.
         self.action_matrix = action_matrix
-        self.marine_type_combinations = [["runner", "rational"], ["rational", "runner"], ["attacker", "rational"],
-                                         ["rational", "attacker"], ["rational", "greedy"], ["greedy", "rational"],
-                                         ["rational", "rational"], ["runner", "greedy"], ["greedy", "runner"],
-                                         ["attacker", "greedy"], ["greedy", "attacker"], ["greedy", "greedy"]]
+        self.marine_type_combinations = [["runner", "altruistic"], ["altruistic", "runner"], ["attacker", "altruistic"],
+                                         ["altruistic", "attacker"], ["altruistic", "rational"], ["rational", "altruistic"],
+                                         ["altruistic", "altruistic"], ["runner", "rational"], ["rational", "runner"],
+                                         ["attacker", "rational"], ["rational", "attacker"], ["rational", "rational"]]
         super().__init__()
 
     def on_start(self):
@@ -56,30 +56,29 @@ class GameBot(sc2.BotAI):
         :return: void
         """
         for agent in self.agent_dict.values():
-            if agent.atype == "rational" or agent.atype == "altruistic":
 
-                m1_score = agent.performance_score
-                m2_score = self.agent_dict[str(agent.partner_agent_tag)].performance_score
+            m1_score = agent.performance_score
+            m2_score = self.agent_dict[str(agent.partner_agent_tag)].performance_score
 
-                m1_action = agent.chosen_action
-                m2_action = self.agent_dict[str(agent.partner_agent_tag)].chosen_action
+            m1_action = agent.chosen_action
+            m2_action = self.agent_dict[str(agent.partner_agent_tag)].chosen_action
 
-                # Update the action matrix with the new scores
-                old_payoffs = self.action_matrix["Scores"][m1_action][m2_action]
-                n0, n1 = self.action_matrix["Counts"][m1_action][m2_action]
+            # Update the action matrix with the new scores
+            old_payoffs = self.action_matrix["Scores"][m1_action][m2_action]
+            n0, n1 = self.action_matrix["Counts"][m1_action][m2_action]
 
-                # Calculate running average
-                if n0 != 0 and n1 != 0:
-                    new_payoffs = (
-                        (old_payoffs[0] * n0 + m1_score) / (n0 + 1),
-                        (old_payoffs[1] * n1 + m2_score) / (n1 + 1)
-                    )
-                else:
-                    new_payoffs = (m1_score, m2_score)
+            # Calculate running average
+            if n0 != 0 and n1 != 0:
+                new_payoffs = (
+                    (old_payoffs[0] * n0 + m1_score) / (n0 + 1),
+                    (old_payoffs[1] * n1 + m2_score) / (n1 + 1)
+                )
+            else:
+                new_payoffs = (m1_score, m2_score)
 
-                # Replace the old values
-                self.action_matrix["Scores"][m1_action][m2_action] = new_payoffs
-                self.action_matrix["Counts"][m1_action][m2_action] = (n0+1, n1+1)
+            # Replace the old values
+            self.action_matrix["Scores"][m1_action][m2_action] = new_payoffs
+            self.action_matrix["Counts"][m1_action][m2_action] = (n0+1, n1+1)
 
         self.save_action_matrix_to_file()
 
@@ -223,7 +222,7 @@ class GameBot(sc2.BotAI):
         This function executes the perception and actions of the agents inside the simulation (every step).
         :param iteration: iteration (sc2)
         """
-        if self.time <= 12:
+        if self.time <= 5:
             baneling_list = [unit for unit in self.known_enemy_units if unit.name == "Baneling"]
             for agent in self.units.of_type(MARINE):
                 # ========== Update agent variables ========== #
