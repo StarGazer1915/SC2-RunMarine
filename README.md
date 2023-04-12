@@ -3,7 +3,7 @@ Door:
 - Bram van Leusden (script-kidie)
 - Justin Klein (StarGazer1915)
 - Rutger Willard (unknownZandbak)
-- Youssef Boulfiham (Youssef-Boulfiham) <------ FLIKKER
+- Youssef Boulfiham (Youssef-Boulfiham)
 
 # ADB-2 (Single-agent)
 ## Inrichting omgeving
@@ -33,7 +33,7 @@ Vanuit de gemiddelde waarden per type agent in de onderstaande barplot, is duide
 <br>![perfomance boxplots](Readme_img/perfomance_wiskers.png)
 
 ## Conclusie 
-Op basis van het experiment blijkt dat de agent die streeft naar het vinden van het Nash equilibrium niet de hoogste score haalt, in tegenstelling tot de hypothese. Uit de resultaten blijkt dat de attacker Marine het best presteert, terwijl de runner Marine het slechtste scoort. Dit is echter te wijten aan het feit dat beide Marines een Pure strategy hanteren, wat resulteert in een lage gemiddelde score van dat concept. Opvallend is dat de rationele Marine niet veel lager scoort dan de attacker Marine, maar wel een veel lagere standaarddeviatie heeft. Dit impliceert dat de rationele agenten vaker hogere scores behalen dan andere Marines. In het algemeen kan worden geconcludeerd dat de prestaties van de Marines afhankelijk zijn van het gebruikte concept uit de theorie en dat het hanteren van een Pure strategy kan leiden tot lagere scores. En dat Marines die de Nash equilibrium hanteren voor meer consistentere hogere scores zorgen tegenover de andere gebruikte concepten van dit experiment. 
+Op basis van het experiment blijkt dat de agent die streeft naar het vinden van het Nash equilibrium niet de hoogste gemiddelde score haalt, in tegenstelling tot de hypothese. Uit de resultaten blijkt dat de attacker Marine het best presteert, terwijl de runner Marine het slechtste scoort. Dit is echter te wijten aan het feit dat beide Marines een Pure strategy hanteren, wat resulteert in een lage gemiddelde score van dat concept. Opvallend is dat de rationele Marine niet veel lager scoort dan de attacker Marine, maar wel een veel lagere standaarddeviatie heeft. Dit impliceert dat de rationele agenten vaker hogere scores behalen dan andere Marines. In het algemeen kan worden geconcludeerd dat de prestaties van de Marines afhankelijk zijn van het gebruikte concept uit de theorie en dat het hanteren van een Pure strategy kan leiden tot lagere scores. En dat Marines die de Nash equilibrium hanteren voor meer consistentere hogere scores zorgen tegenover de andere gebruikte concepten van dit experiment. 
 
 ## Discussie 
 ### verloop 
