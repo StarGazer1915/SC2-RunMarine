@@ -42,7 +42,7 @@ Over het algemeen verliep deze opdracht beter dan de vorige, maar we hadden nog 
 ### Voor de volgende keer
 In het vervolg lijkt het ons verstandig om eerst een duidelijke rol- en taakverdeling te maken, evenals een heldere planning. Daarnaast zullen we ook afspraken maken over de uitvoering van het project, om te voorkomen dat er zonder overleg wordt afgeweken van het algemene plan. Zo kunnen we voorkomen dat er drastische acties worden ondernomen die uiteindelijk onbruikbaar of zelfs schadelijk blijken te zijn voor de opdracht.
 
-## Gebruik
+# Gebruik
 Om de simulatie te starten kunt u het `main.py` bestand uitvoeren. Let op dat u hiervoor wel een aantal libraries/packages, waaronder `sc2`, geïnstalleerd moet hebben. Zie hiervoor de imports van de `main.py`, `GameBot.py` en `MarineAgent.py` bestanden. Ook moet u uiteraard StarCraft II gedownload hebben op uw computer/machine om de omgevingen te kunnen laden.
 
 # Bronnen 
