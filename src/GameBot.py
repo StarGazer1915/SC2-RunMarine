@@ -11,7 +11,7 @@ from src.MarineAgent import MarineAgent
 class GameBot(sc2.BotAI):
     def __init__(self, action_matrix):
         self.square_info_dictionaries = []
-        self.agent_dict = {}
+        self.agent_dict: dict["str", MarineAgent] = {}
         self.pathing_map = np.array([])
         self.map_y_size = 0.
         self.map_x_size = 0.
@@ -56,7 +56,8 @@ class GameBot(sc2.BotAI):
         :return: void
         """
         for agent in self.agent_dict.values():
-            if agent.atype == "rational":
+            if agent.atype == "rational" or agent.atype == "altruistic":
+
                 m1_score = agent.performance_score
                 m2_score = self.agent_dict[str(agent.partner_agent_tag)].performance_score
 

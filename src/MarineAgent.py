@@ -97,46 +97,81 @@ class MarineAgent:
 
         return [choices, scores]
 
-    def find_rational_best_choice(self, adict):
+    def find_altruistic_best_choice(self, adict):
         """
-        This function chooses the most rational choice for the rational agents, in this case being the combination
+        This function chooses the most pareto optimal choice for the altruistic agents, in this case being the combination
         that yields both parties the biggest possible result.
         :param adict: nested dict
         :return: string
         """
+        #! Finding a pareto optimallity
         pairs = self.define_matrix_scores(adict)
         highest_score = max(pairs[1])  # Get largest scoring pair
         best_combo = pairs[0][pairs[1].index(highest_score)]  # See what combination results those scores
         return best_combo[0]  # Return own choice for that combination of choices
 
-    def find_greediest_choice(self, adict):
+    def find_rational_choice(self, adict):
         """
+        TODO rewrite this docstring for a rational agent.
         This function chooses the most greedy choice for the greedy agents. In this function we
         only look at the agent's own choices and what gives it the highest score.
         :param adict: nested dict
         :return: string
         """
-        pairs = self.define_matrix_scores(adict)
 
-        choices_flat = list(np.array(pairs[0]).flatten())  # Flatten to get all own possible choices (selfish choice)
-        choices = [choices_flat[i] for i in range(0, len(choices_flat), 2)]  # Get only own choices
+        # # * The rational agent always assumes that his partner agent is also a rational agent.
 
-        scores_flat = list(np.array(pairs[1]).flatten())  # Same for scores
-        scores = [scores_flat[i] for i in range(0, len(choices_flat), 2)]
+        scores = adict["Scores"]
+        
+        # Looking from the perspective of m1
+        m1_best_combo_m2a = ["Attack", "Attack"] if scores["Attack"]["Attack"][0] > scores["Flee"]["Attack"][0] else ["Flee", "Attack"]
+        m1_best_choice_m2a = m1_best_combo_m2a[0]
 
-        highest_score = max(scores)
-        best_choice = choices[scores.index(highest_score)]
-        return best_choice  # Return the best possible choice for the agent
+        m1_best_combo_m2f = ["Attack", "Flee"] if scores["Attack"]["Flee"][0] > scores["Flee"]["Flee"][0] else ["Flee", "Flee"]
+        m1_best_choice_m2f = m1_best_combo_m2f[0]
+
+        # Now Looking from the partners perspective 
+        m2_best_combo_m1a = ["Attack", "Attack"] if scores["Attack"]["Attack"][1] > scores["Attack"]["Flee"][1] else ["Attack", "Flee"]
+        m2_best_choice_m1a = m2_best_combo_m1a[1]
+
+        m2_best_combo_m1f = ["Flee", "Attack"] if scores["Flee"]["Attack"][1] > scores["Flee"]["Flee"][1] else ["Flee", "Flee"]
+        m2_best_choice_m1f = m2_best_combo_m1f[1]
+
+        # Checking for nash equilibrium
+        if m1_best_combo_m2a == m2_best_combo_m1a or m1_best_combo_m2a == m2_best_combo_m1f:
+            if m1_best_combo_m2f == m2_best_combo_m1a or m1_best_combo_m2a == m2_best_combo_m1f:
+                self.chosen_action = m1_best_choice_m2a if scores[m1_best_combo_m2a].sum() > scores[m1_best_choice_m2f].sum() else m1_best_choice_m2f
+            else:
+                self.chosen_action = m1_best_choice_m2a
+        elif m1_best_combo_m2f == m2_best_combo_m1a or m1_best_combo_m2a == m2_best_combo_m1f:
+            self.chosen_action = m1_best_choice_m2f
+
+        # If now nash equilibrium has been found, figure out and take the best suboptimol outcome for both parties
+        elif m1_best_choice_m2a == m1_best_choice_m2f:
+            if m1_best_choice_m2a == "Attack":
+                self.chosen_action = m1_best_choice_m2a if m2_best_choice_m1a == "Attack" else m1_best_choice_m2f
+            elif m1_best_choice_m2a == "Flee":
+                self.chosen_action = m1_best_choice_m2a if m2_best_choice_m1f == "Attack" else m1_best_choice_m2f
+
+        elif m2_best_choice_m1a == m2_best_choice_m1f:
+            if m2_best_choice_m1a == "Attack":
+                self.chosen_action = m1_best_choice_m2a
+            elif m2_best_choice_m1a == "Flee":
+                self.chosen_action = m1_best_choice_m2f
+
+
+
+
 
     def take_action_from_action_matrix(self, action_matrix):
         """
         Choose an action behavior based on the agent's atype.
         :param action_matrix: nested dict
         """
-        if self.atype == "greedy":
-            self.chosen_action = self.find_greediest_choice(action_matrix)
-        elif self.atype == "rational":
-            self.chosen_action = self.find_rational_best_choice(action_matrix)
+        if self.atype == "rational":
+            self.chosen_action = self.find_rational_choice(action_matrix)
+        elif self.atype == "altruistic":
+            self.chosen_action = self.find_altruistic_best_choice(action_matrix)
         elif self.atype == "attacker":
             self.chosen_action = "Attack"
         else:
