@@ -99,8 +99,8 @@ class MarineAgent:
 
     def find_altruistic_best_choice(self, adict):
         """
-        This function chooses the most pareto optimal choice for the altruistic agents, in this case being the combination
-        that yields both parties the biggest possible result.
+        This function chooses the most pareto optimal choice for the altruistic agents, 
+        in this case being the combination that yields both parties the biggest possible result.
         :param adict: nested dict
         :return: string
         """
