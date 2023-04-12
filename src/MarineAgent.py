@@ -148,12 +148,13 @@ class MarineAgent:
             self.chosen_action = m1_best_choice_m2f
 
         # If now nash equilibrium has been found, figure out and take the best suboptimol outcome for both parties
+        # Check voor een dominantie bij de agents in best choices
         elif m1_best_choice_m2a == m1_best_choice_m2f:
             if m1_best_choice_m2a == "Attack":
                 self.chosen_action = m1_best_choice_m2a if m2_best_choice_m1a == "Attack" else m1_best_choice_m2f
             elif m1_best_choice_m2a == "Flee":
                 self.chosen_action = m1_best_choice_m2a if m2_best_choice_m1f == "Attack" else m1_best_choice_m2f
-
+                
         elif m2_best_choice_m1a == m2_best_choice_m1f:
             if m2_best_choice_m1a == "Attack":
                 self.chosen_action = m1_best_choice_m2a
