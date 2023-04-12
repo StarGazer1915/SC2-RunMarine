@@ -160,10 +160,6 @@ class MarineAgent:
             elif m2_best_choice_m1a == "Flee":
                 self.chosen_action = m1_best_choice_m2f
 
-
-
-
-
     def take_action_from_action_matrix(self, action_matrix):
         """
         Choose an action behavior based on the agent's atype.
