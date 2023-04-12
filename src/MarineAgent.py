@@ -113,8 +113,9 @@ class MarineAgent:
     def find_rational_choice(self, adict):
         """
         TODO rewrite this docstring for a rational agent.
-        This function chooses the most greedy choice for the greedy agents. In this function we
-        only look at the agent's own choices and what gives it the highest score.
+        This function is used for the rational agent type, and looks for a nash equilibrium in the state of social dillema.
+        If it can find multiple it will pick the most profitable option for both parties.
+        Else it will settle for a more sub optimal solution.
         :param adict: nested dict
         :return: string
         """
